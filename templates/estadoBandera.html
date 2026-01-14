@@ -1,10 +1,15 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-    <meta charset="UTF-8">
     <title>Estado de la Bandera</title>
 </head>
 <body>
-    <p>La bandera se encuentra {{ estado }}</p>
+    <h1>Estado de la Bandera</h1>
+    <p>Estado actual: {{ estado }} </p>
+    {% if jugador %}
+        <p>El jugador que tiene la bandera es: {{ jugador.nombre }}</p>
+    {% else %}
+        <p>Ningún jugador tiene la bandera actualmente</p>
+    {% endif %}
 </body>
 </html>
