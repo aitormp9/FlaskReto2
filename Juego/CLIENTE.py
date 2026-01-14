@@ -50,16 +50,16 @@ while run:
     if state is None:
         continue
 
-    win.fill((0, 0, 0))  # fondo negro
+    screen.blit(fondo, (0, 0))  # fondo negro
 
     # Dibujar jugadores
     for p in state['players'].values():
-        pygame.draw.rect(win, (255, 0, 0), (p['x'], p['y'], 30, 30))
+        pygame.draw.rect(screen, (255, 0, 0), (p['x'], p['y'], 30, 30))
 
     # Dibujar bandera
     f = state['flag']
     color_flag = (0, 255, 0) if f['estado'] is None else (255, 255, 0)
-    pygame.draw.rect(win, color_flag, (f['x'], f['y'], 20, 20))
+    pygame.draw.rect(screen, color_flag, (f['x'], f['y'], 20, 20))
 
     pygame.display.update()
 
