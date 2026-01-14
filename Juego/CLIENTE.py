@@ -1,29 +1,26 @@
-import pygame
 import socket
 import pickle
+import pygame
 import sys
 
-# --- Configuración ---
-HOST = '192.168.25.46'  # IP del servidor
+HOST = '192.168.25.46'
 PORT = 2000
-
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect((HOST, PORT))
 
-# --- Pygame ---
 pygame.init()
 screen = pygame.display.set_mode((1280, 720))
-pygame.display.set_caption("Cliente Captura la Bandera")
 clock = pygame.time.Clock()
 vel = 5
 
-# Jugador local
-player = {"x": 100, "y": 100}
-# Estado completo recibido del servidor
+# Identificador del jugador (podrías recibirlo del servidor)
+player_id = str(client.getsockname())
+
+# Posición inicial
+player = {"x": 25, "y": 25}
 players = {}
 flag = {"x": 640, "y": 360, "estado": None}
 
-# --- Función enviar posición ---
 def send_position():
     try:
         client.sendall(pickle.dumps(player))
@@ -33,7 +30,6 @@ def send_position():
         print("Error:", e)
         return None
 
-# --- Bucle principal ---
 run = True
 while run:
     clock.tick(60)
@@ -41,7 +37,6 @@ while run:
         if event.type == pygame.QUIT:
             run = False
 
-    # Movimiento del jugador
     keys = pygame.key.get_pressed()
     if keys[pygame.K_LEFT] or keys[pygame.K_a]: player["x"] -= vel
     if keys[pygame.K_RIGHT] or keys[pygame.K_d]: player["x"] += vel
@@ -54,13 +49,12 @@ while run:
         players = state["players"]
         flag = state["flag"]
 
-    # --- Dibujar ---
-    screen.fill((0, 0, 0))  # fondo negro
-    # Dibujar jugadores
+    # Dibujar
+    screen.fill((0,0,0))
     for pid, pdata in players.items():
-        color = (0,255,0) if pid == str(client.getsockname()) else (255,0,0)
+        color = (0,255,0) if pid == player_id else (255,0,0)
         pygame.draw.rect(screen, color, (pdata["x"], pdata["y"], 30, 30))
-    # Dibujar bandera
+
     f_color = (255,255,0) if flag["estado"] else (0,255,0)
     pygame.draw.rect(screen, f_color, (flag["x"], flag["y"], 20, 20))
 
