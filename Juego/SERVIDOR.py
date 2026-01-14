@@ -1,37 +1,38 @@
 import socket
-import threading
 import pickle
+import threading
+import time
 
-# --- Configuración del servidor ---
-HOST = ''  # escuchar en todas las interfaces
+# --- Configuración ---
+HOST = '0.0.0.0'   # Escucha en todas las interfaces
 PORT = 2000
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((HOST, PORT))
 server.listen()
+print("Servidor iniciado, esperando jugadores...")
 
 clients = []
-players = {}  # Diccionario de todos los jugadores
-flag = {"x": 250, "y": 250, "estado": None}  # Posición inicial de la bandera
+players = {}  # Diccionario {id: {"x": , "y": }}
+flag = {"x": 640, "y": 360, "estado": None}  # Posición de la bandera
 
-lock = threading.Lock()  # Para evitar conflictos al actualizar players
+lock = threading.Lock()  # Para proteger acceso concurrente a players
 
-# --- Función para enviar el estado a todos los clientes ---
+# --- Función para enviar estado a todos ---
 def broadcast_state():
-    state = {'players': players, 'flag': flag}
+    state = {"players": players, "flag": flag}
     for c in clients:
         try:
             c.sendall(pickle.dumps(state))
         except:
-            pass  # si un cliente está caído, lo ignoramos por ahora
+            pass
 
 # --- Manejo de cada cliente ---
 def handle_client(conn, addr):
-    print(f"Jugador {addr} conectado.")
-
+    print(f"[+] Jugador {addr} conectado")
+    player_id = str(addr)
     with lock:
-        # Posición inicial aleatoria o predefinida
-        players[addr] = {"x": 0, "y": 0}
+        players[player_id] = {"x": 0, "y": 0}
 
     connected = True
     while connected:
@@ -39,37 +40,31 @@ def handle_client(conn, addr):
             data = conn.recv(4096)
             if not data:
                 break
-
-            # Convertimos datos de bytes a diccionario Python
-            player_data = pickle.loads(data)
-
-            # Actualizamos la posición del jugador
+            # Recibir posición
+            pos = pickle.loads(data)
             with lock:
-                players[addr].update(player_data)
+                players[player_id].update(pos)
 
-                # --- Lógica básica para agarrar la bandera ---
-                px, py = players[addr]['x'], players[addr]['y']
-                if abs(px - flag['x']) < 30 and abs(py - flag['y']) < 30:
-                    flag['estado'] = addr  # jugador que tiene la bandera
+                # Lógica simple de bandera
+                px, py = players[player_id]["x"], players[player_id]["y"]
+                if abs(px - flag["x"]) < 30 and abs(py - flag["y"]) < 30:
+                    flag["estado"] = player_id  # jugador que tiene la bandera
 
-            # Enviar estado actualizado a todos los clientes
             broadcast_state()
-
         except:
             break
 
     # Cliente desconectado
-    print(f"Jugador {addr} desconectado.")
+    print(f"[-] Jugador {addr} desconectado")
     with lock:
-        if addr in players:
-            del players[addr]
+        if player_id in players:
+            del players[player_id]
         if conn in clients:
             clients.remove(conn)
     conn.close()
 
-# --- Función principal para aceptar clientes ---
+# --- Aceptar clientes ---
 def start():
-    print("Servidor iniciado, esperando jugadores...")
     while True:
         conn, addr = server.accept()
         clients.append(conn)
