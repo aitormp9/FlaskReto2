@@ -8,20 +8,6 @@ from bandera import bandera
 import socket
 import pickle
 
-# Conexión al servidor
-HOST = '127.0.0.1'  # cambia si el servidor está en otra máquina
-PORT = 2000
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect((HOST, PORT))
-
-def send_position(x, y):
-    """Envía la posición del jugador y recibe estado global del servidor"""
-    try:
-        client.sendall(pickle.dumps({"x": x, "y": y}))
-        state = pickle.loads(client.recv(4096))
-        return state
-    except:
-        return None
 
 pygame.init()
 screen = pygame.display.set_mode((1280, 720))
@@ -204,8 +190,7 @@ while True:
     # --- Eventos ---
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            pygame.quit()
-            client.close()  # cerramos conexión al servidor
+            pygame.quit() # cerramos conexión al servidor
             exit()
 
     # --- Movimiento del jugador local (p1) ---
@@ -219,29 +204,7 @@ while True:
     if keys[pygame.K_DOWN] or keys[pygame.K_s]:
         p1.y += velocidad
 
-    # --- Enviar posición de p1 al servidor y recibir estado global ---
-    state = send_position(p1.x, p1.y)
 
-    if state:
-        # Actualizar los demás jugadores recibidos del servidor
-        # (aquí se asume que jugadores = [p1, p2, p3, p4])
-        index = 1  # empezamos en 1 porque p1 es el local
-        for addr, pdata in state['players'].items():
-            # No sobreescribimos al jugador local
-            if pdata['x'] == p1.x and pdata['y'] == p1.y:
-                continue
-            if index < len(jugadores):
-                jugadores[index].x = pdata['x']
-                jugadores[index].y = pdata['y']
-                index += 1
-
-        # Actualizar bandera
-        bandera.x = state['flag']['x']
-        bandera.y = state['flag']['y']
-        bandera.jugador = state['flag']['estado']
-
-    # --- Colisiones y lógica del juego ---
-    for player in jugadores:
         colisiones(player)
     estadobandera()
 
