@@ -11,14 +11,11 @@ PORT = 2000
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect((HOST, PORT))
 
-# Pygame setup
 pygame.init()
-WIDTH, HEIGHT = 500, 500
-win = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("CTF Multijugador")
-
-# Posición inicial del jugador
-x, y = 50, 50
+screen = pygame.display.set_mode((1280, 720))
+imagen=pygame.image.load('imagen/fondo.jpg')
+fondo=pygame.transform.scale(imagen,(1280,720))
+clock = pygame.time.Clock()
 vel = 5
 
 clock = pygame.time.Clock()
