@@ -13,7 +13,6 @@ def check_colisiones(n_pos, v_pos, muros):
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect(('localhost', 65432))
 
-# --- RECIBIR CONFIGURACIÓN ---
 mensaje = ""
 while mensaje.count("#") < 3:
     mensaje += s.recv(4096).decode()
@@ -27,25 +26,28 @@ mi_id = partes[3].strip()
 
 pygame.init()
 ventana = pygame.display.set_mode((1280, 720))
-b_obj = ClaseBandera(ventana)  # Tu clase
-otros = {}
+b_obj = ClaseBandera(ventana)
+datos_otros = {}
 
 
 def recibir():
-    global otros, mi_pos
+    global datos_otros, mi_pos
     while True:
         try:
             data = s.recv(2048).decode().strip()
+            if not data: continue
             for msg in data.split('\n'):
                 for p in msg.split('|'):
                     if ':' not in p: continue
-                    idx, pos = p.split(':')
-                    coords = [int(x) for x in pos.split(',')]
+                    idx, contenido = p.split(':')
+                    val = contenido.split(',')
                     if idx == 'B':
-                        b_obj.x, b_obj.y = coords
+                        b_obj.x, b_obj.y = int(val[0]), int(val[1])
                     else:
-                        otros[idx] = coords
-                        if idx == mi_id: mi_pos = coords
+                        # Guardamos x, y, r, g, b
+                        datos_otros[idx] = [int(x) for x in val]
+                        if idx == mi_id:
+                            mi_pos = [int(val[0]), int(val[1])]
         except:
             break
 
@@ -74,11 +76,13 @@ while True:
     for m in lista_muros: pygame.draw.rect(ventana, (100, 100, 100), m)
     for c in lista_casas: pygame.draw.rect(ventana, (200, 200, 0), c, 2)
 
-    b_obj.draw()  # Dibujo de tu clase bandera
+    b_obj.draw()
 
-    for id_j, p in otros.items():
-        color = (0, 255, 255) if id_j == mi_id else (255, 255, 255)
-        pygame.draw.circle(ventana, color, (p[0] + 10, p[1] + 10), 10)  # Pelotas
+    for id_j, d in list(datos_otros.items()):
+        if len(d) >= 5:  # Jugador con color
+            pygame.draw.circle(ventana, (d[2], d[3], d[4]), (d[0] + 10, d[1] + 10), 12)
+            if id_j == mi_id:
+                pygame.draw.circle(ventana, (255, 255, 255), (d[0] + 10, d[1] + 10), 14, 2)
 
     pygame.display.flip()
     clock.tick(60)
