@@ -1,88 +1,106 @@
 import pygame, socket, threading
-from bandera import bandera as ClaseBandera
+from bandera import bandera as DibujoBandera
 
-
-def check_colisiones(n_pos, v_pos, muros):
-    rj = pygame.Rect(n_pos[0], n_pos[1], 20, 20)
-    for m in muros:
-        if rj.colliderect(m): return v_pos
-    if n_pos[0] < 0 or n_pos[0] > 1260 or n_pos[1] < 0 or n_pos[1] > 700: return v_pos
-    return n_pos
-
-
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# --- CONEXIÓN ---
+s = socket.socket()
 s.connect(('localhost', 65432))
 
-mensaje = ""
-while mensaje.count("#") < 3:
-    mensaje += s.recv(4096).decode()
-
-partes = mensaje.split("#")
-mi_pos = [int(x) for x in partes[0].split(":")[1].split(",")]
-lista_muros = [pygame.Rect(int(v.split(",")[0]), int(v.split(",")[1]), int(v.split(",")[2]), int(v.split(",")[3])) for v
-               in partes[1].split("|") if v]
-lista_casas = [pygame.Rect(int(v.split(",")[0]), int(v.split(",")[1]), 70, 70) for v in partes[2].split("|") if v]
+datos_inicio = s.recv(4096).decode()
+partes = datos_inicio.split("#")
+mi_pos = [int(n) for n in partes[0].split(":")[1].split(",")]
+muros = [pygame.Rect(int(x), int(y), int(w), int(h)) for m in partes[1].split("|") for x, y, w, h in [m.split(",")]]
 mi_id = partes[3].strip()
 
+# --- INICIO PYGAME ---
 pygame.init()
 ventana = pygame.display.set_mode((1280, 720))
-b_obj = ClaseBandera(ventana)
-datos_otros = {}
+fuente = pygame.font.SysFont("Arial", 25, bold=True)
+la_bandera = DibujoBandera(ventana)
+pos_texto_casas = [[25, 25], [1235, 25], [25, 675], [1235, 675]]
+casas_pos = [[0, 0], [1210, 0], [0, 650], [1210, 650]]
+# Variables de estado
+otros_jugadores = {}
+score_global = [0, 0, 0, 0]
 
 
 def recibir():
-    global datos_otros, mi_pos
+    global otros_jugadores, mi_pos, score_global
     while True:
         try:
-            data = s.recv(2048).decode().strip()
+            data = s.recv(4096).decode().strip()
             if not data: continue
-            for msg in data.split('\n'):
-                for p in msg.split('|'):
-                    if ':' not in p: continue
-                    idx, contenido = p.split(':')
-                    val = contenido.split(',')
-                    if idx == 'B':
-                        b_obj.x, b_obj.y = int(val[0]), int(val[1])
-                    else:
-                        # Guardamos x, y, r, g, b
-                        datos_otros[idx] = [int(x) for x in val]
-                        if idx == mi_id:
-                            mi_pos = [int(val[0]), int(val[1])]
+            for mensaje in data.split('\n'):
+                temp_jugadores = {}
+                for item in mensaje.split('|'):
+                    if ':' not in item: continue
+                    clave, valor = item.split(':')
+
+                    if clave == 'B':  # Bandera
+                        b_pos = [int(n) for n in valor.split(',')]
+                        la_bandera.x, la_bandera.y = b_pos[0], b_pos[1]
+                    elif clave == 'S':  # Scores
+                        score_global = [int(n) for n in valor.split(',')]
+                    else:  # Jugadores
+                        v = [int(n) for n in valor.split(',')]
+                        temp_jugadores[clave] = v
+                        if clave == mi_id:
+                            if abs(mi_pos[0] - v[0]) > 50:
+                                mi_pos[0], mi_pos[1] = v[0], v[1]
+                otros_jugadores = temp_jugadores
         except:
             break
 
 
 threading.Thread(target=recibir, daemon=True).start()
 
-clock = pygame.time.Clock()
+reloj = pygame.time.Clock()
 while True:
     for e in pygame.event.get():
         if e.type == pygame.QUIT: exit()
 
-    old = mi_pos[:]
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_a]: mi_pos[0] -= 5
-    if keys[pygame.K_d]: mi_pos[0] += 5
-    if keys[pygame.K_w]: mi_pos[1] -= 5
-    if keys[pygame.K_s]: mi_pos[1] += 5
+    # Control y colisiones
+    teclas = pygame.key.get_pressed()
+    vieja_pos = mi_pos[:]
+    if teclas[pygame.K_a]: mi_pos[0] -= 5
+    if teclas[pygame.K_d]: mi_pos[0] += 5
+    if teclas[pygame.K_w]: mi_pos[1] -= 5
+    if teclas[pygame.K_s]: mi_pos[1] += 5
 
-    mi_pos = check_colisiones(mi_pos, old, lista_muros)
+    mi_pos[0] = max(0, min(1260, mi_pos[0]))
+    mi_pos[1] = max(0, min(700, mi_pos[1]))
+
+    rect_yo = pygame.Rect(mi_pos[0], mi_pos[1], 20, 20)
+    for m in muros:
+        if rect_yo.colliderect(m): mi_pos = vieja_pos
+
     try:
         s.send(f"{mi_pos[0]},{mi_pos[1]}\n".encode())
     except:
         break
 
+    # --- DIBUJAR ---
     ventana.fill((30, 30, 30))
-    for m in lista_muros: pygame.draw.rect(ventana, (100, 100, 100), m)
-    for c in lista_casas: pygame.draw.rect(ventana, (200, 200, 0), c, 2)
+    for m in muros: pygame.draw.rect(ventana, (100, 100, 100), m)
+    la_bandera.draw()
 
-    b_obj.draw()
-
-    for id_j, d in list(datos_otros.items()):
-        if len(d) >= 5:  # Jugador con color
-            pygame.draw.circle(ventana, (d[2], d[3], d[4]), (d[0] + 10, d[1] + 10), 12)
+    # Dibujar Marcador
+    for i in range(4):
+        txt = fuente.render(f" {score_global[i]}", False, (255, 255, 255))
+        ventana.blit(txt, (pos_texto_casas[i][0], pos_texto_casas[i][1]))
+    #Dibujar Casa
+    for i in range(4):
+        # Dibujamos un cuadrado de 70x70 en cada esquina
+        # Usamos el color de cada jugador para saber cuál es cuál
+        pos_casa = casas_pos[i]
+        pygame.draw.rect(ventana, (255,255,255), (pos_casa[0], pos_casa[1], 70, 70),
+                         2)  # El '2' es para que solo sea el borde
+        # Dibujar Jugadores
+    for id_j, d in otros_jugadores.items():
+        if len(d) >= 5:
+            color = (d[2], d[3], d[4])
+            pygame.draw.circle(ventana, color, (d[0] + 10, d[1] + 10), 10)
             if id_j == mi_id:
-                pygame.draw.circle(ventana, (255, 255, 255), (d[0] + 10, d[1] + 10), 14, 2)
+                pygame.draw.circle(ventana, (255, 255, 255), (d[0] + 10, d[1] + 10), 13, 2)
 
     pygame.display.flip()
-    clock.tick(60)
+    reloj.tick(60)
