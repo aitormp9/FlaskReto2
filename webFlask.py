@@ -8,6 +8,7 @@ urlApi = "http://localhost:8080/api/v1"
 
 estado_bandera = 'libre'
 jugador_bandera= None
+estado_partida = 'sin empezar'
 
 @app.route('/', methods=['GET', 'POST'])
 def inicio():
@@ -15,7 +16,11 @@ def inicio():
 
 @app.route('/estadoPartida', methods=['GET'])
 def estadoPartida():
-    return render_template('estadoPartida.html', name="estadoPartida")
+    return render_template('estadoPartida.html', name="estadoPartida", estado=estado_partida)
+def  actualizarPartida(nuevo_estadoPartida):
+    global estado_partida
+    if nuevo_estadoPartida in ["sin empezar","jugándose","terminada"]:
+        estado_partida = nuevo_estadoPartida
 
 @app.route('/jugadoresConectados', methods=['GET'])
 def jugadoresConectados():
@@ -31,7 +36,7 @@ def posiciones():
 
 @app.route('/estadoBandera', methods=['GET', 'POST'])
 def estadoBandera():
-        return render_template('estadoBandera.html', name="estadoBandera")
+        return render_template('estadoBandera.html', name="estadoBandera", estado=estado_bandera)
 
 def actualizar_bandera(nuevo_estado, jugador = None):
     global estado_bandera
