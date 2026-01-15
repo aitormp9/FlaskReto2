@@ -1,80 +1,98 @@
 import socket
 import threading
-import pickle
+import random
 
+import pygame
+
+# Configuración
 HOST = '0.0.0.0'
-PORT = 2000
+PORT = 65432
 
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind((HOST, PORT))
-server.listen()
-print("Servidor iniciado, esperando jugadores...")
+posiciones_iniciales = ["25,25", "1245,25", "25,685", "1246,685"]
+casas=["0,0","1210,0","0,650","1210,650"]
+bandera="640,360"
 
-players = {}
-flag = {"x": 640, "y": 360, "jugador": None}
-clients = []
-lock = threading.Lock()
+def generar_muros():
+    muros = []
+    zonas = [
+        (100, 100, 540, 260), (740, 100, 1180, 260),
+        (100, 460, 540, 620), (740, 460, 1180, 620)
+    ]
 
-def broadcast_state():
-    state = {"players": players, "flag": flag}
-    for c in clients:
-        try:
-            c.sendall(pickle.dumps(state))
-        except:
-            pass
+    for zona in zonas:
+        x_min, y_min, x_max, y_max = zona
+        for _ in range(4):
+            # TAMAÑO INDIVIDUAL PARA CADA MURO
+            ancho = random.randint(10, 150)
+            alto = random.randint(10, 200)
 
-def handle_client(conn, addr):
-    player_id = str(addr)
-    with lock:
-        players[player_id] = {"x": 0, "y": 0, "x_inicio": 0, "y_inicio": 0}
-    clients.append(conn)
-    print(f"[+] Jugador {player_id} conectado")
+            mx = random.randint(x_min, x_max)
+            my = random.randint(y_min, y_max)
+
+            # Ajustes de borde originales
+            if mx < 50: mx += 50
+            if my < 50: my += 50
+            if mx + ancho > 1180: mx = 1180 - ancho
+            if my + alto > 620: my = 620 - alto
+
+            muros.append(f"{mx},{my},{ancho},{alto}")
+    return "|".join(muros)
+
+
+# Esto se ejecuta UNA VEZ cuando abres el servidor
+DATOS_MUROS = generar_muros()
+posiciones_actuales = {}
+clientes = {}
+CASAS="|".join(casas)
+
+def manejar_jugador(conn, jugador_id):
+    pos_inicial = posiciones_iniciales[jugador_id % 4]
+    mensaje_bienvenida = f"START:{pos_inicial}#{DATOS_MUROS}#{CASAS}#{bandera}"
+    conn.sendall(mensaje_bienvenida.encode('utf-8'))
+
+    posiciones_actuales[jugador_id] = pos_inicial
+    clientes[jugador_id] = conn
 
     while True:
         try:
-            data = conn.recv(4096)
-            if not data:
-                break
-            pos = pickle.loads(data)
-
-            with lock:
-                players[player_id]["x"] = pos.get("x", players[player_id]["x"])
-                players[player_id]["y"] = pos.get("y", players[player_id]["y"])
-
-                # Lógica bandera
-                px, py = players[player_id]["x"], players[player_id]["y"]
-                fx, fy = flag["x"], flag["y"]
-
-                # Tomar bandera si está libre
-                if flag["jugador"] is None and abs(px - fx) < 30 and abs(py - fy) < 30:
-                    flag["jugador"] = player_id
-
-                # Robo de bandera
-                if flag["jugador"] is not None and flag["jugador"] != player_id:
-                    jugador_con_bandera = flag["jugador"]
-                    bx, by = players[jugador_con_bandera]["x"], players[jugador_con_bandera]["y"]
-                    if abs(px - bx) < 30 and abs(py - by) < 30:
-                        # Devuelve la bandera
-                        players[jugador_con_bandera]["x"] = players[jugador_con_bandera]["x_inicio"]
-                        players[jugador_con_bandera]["y"] = players[jugador_con_bandera]["y_inicio"]
-                        flag["jugador"] = None
-
-            broadcast_state()
-
+            data = conn.recv(1024).decode('utf-8')
+            if not data: break
+            posiciones_actuales[jugador_id] = data
+            paquete = "|".join([f"{idx}:{pos}" for idx, pos in posiciones_actuales.items()])
+            for c_sock in list(clientes.values()):
+                try:
+                    c_sock.sendall(paquete.encode('utf-8'))
+                except:
+                    pass
         except:
             break
 
-    print(f"[-] Jugador {player_id} desconectado")
-    with lock:
-        if player_id in players:
-            del players[player_id]
-        if conn in clients:
-            clients.remove(conn)
+    if jugador_id in clientes: del clientes[jugador_id]
+    if jugador_id in posiciones_actuales: del posiciones_actuales[jugador_id]
     conn.close()
 
-def start():
+
+# SERVIDOR.PY
+
+# 1. Crea un bucle de lógica aparte o mételo en el hilo principal
+def logic_loop():
+    while True:
+        estadobandera()  # Aquí es donde ejecutas tu función
+
+        # Después de actualizar la bandera, notificas a todos
+        enviar_estado_global()
+
+        pygame.time.Clock().tick(60)  # Para que no consuma 100% de CPU
+if __name__ == "__main__":
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # EVITA EL ERROR DE BIND REUTILIZANDO EL PUERTO
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server.bind((HOST, PORT))
+    server.listen()
+    print("Servidor funcionando.")
+
+    id_contador = 0
     while True:
         conn, addr = server.accept()
-        threading.Thread(target=handle_client, args=(conn, addr), daemon=True).start()
-
-start()
+        threading.Thread(target=manejar_jugador, args=(conn, id_contador), daemon=True).start()
+        id_contador += 1
