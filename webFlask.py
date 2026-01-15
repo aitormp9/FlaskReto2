@@ -3,8 +3,8 @@ from flask import Flask, render_template, request
 import threading
 
 app = Flask(__name__, template_folder='templates')
-urlApi = "http://localhost:8080/api/v1"
-#urlApi = "http://3.233.57.10:8080/api/v1/"
+#urlApi = "http://localhost:8080/api/v1"
+urlApi = "http://3.233.57.10:8080/api/v1"
 
 estado_bandera = 'libre'
 jugador_bandera= None
@@ -23,7 +23,7 @@ def  actualizarPartida(nuevo_estadoPartida):
         estado_partida = nuevo_estadoPartida
 
 @app.route('/jugadoresConectados', methods=['GET'])
-def jugadoresConectados():
+def jugadoresConectados(nuevoJugador):
     response = requests.get(f'{urlApi}/jugadores')
     jugadores = response.json()
     return render_template('jugadoresConectados.html', name="jugadoresConectados", jugadores=jugadores)
