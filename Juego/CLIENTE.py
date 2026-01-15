@@ -25,19 +25,40 @@ s.connect(('localhost', 65432))
 
 lista_muros_rects = []
 mi_pos = [0, 0]  # Valor inicial por defecto
-
+lista_casas=[]
+bandera_rect="";
+d=0;
 # Recibir configuración inicial (START)
 # Aumentamos el buffer a 4096 porque el mapa es grande
-mensaje = s.recv(4096).decode('utf-8')
+# Sustituye la línea: mensaje = s.recv(8192).decode('utf-8') por esto:
+mensaje = ""
+while mensaje.count("#") < 3: mensaje += s.recv(4096).decode('utf-8')
 
 if mensaje.startswith("START:"):
-    parte_jugador, parte_muros = mensaje.split("#")
+    # Separamos las 3 partes
+    partes = mensaje.split("#")
+    parte_jugador = partes[0]
+    parte_muros = partes[1]
+    parte_casas = partes[2]
+    parte_bandera=partes[3]
+
+    # 1. Posición inicial
     mi_pos = [int(x) for x in parte_jugador.split(":")[1].split(",")]
+
+    # 2. Muros
+    lista_muros_rects = []
     for m in parte_muros.split("|"):
         d = [int(v) for v in m.split(",")]
-        # Guardamos como objetos Rect directamente
         lista_muros_rects.append(pygame.Rect(d[0], d[1], d[2], d[3]))
 
+    # 3. Casas (CORREGIDO)
+    lista_casas = []
+    for c in parte_casas.split("|"):
+        d = [int(v) for v in c.split(",")] # Usamos 'c', que es el texto de la casa
+        lista_casas.append(pygame.Rect(d[0], d[1], 50, 50)) # Tamaño 70x70 o el que prefieras
+    limpio = parte_bandera.replace("[", "").replace("]", "").replace("'", "").strip()
+    d = [int(v) for v in limpio.split(",")]
+    bandera_rect = pygame.Rect(d[0], d[1], 15, 15)
 otros_jugadores = {}
 
 
@@ -63,7 +84,7 @@ threading.Thread(target=recibir_datos, daemon=True).start()
 pygame.init()
 ventana = pygame.display.set_mode((1280, 720))
 reloj = pygame.time.Clock()
-velocidad = 4
+velocidad = 3
 
 while True:
     for e in pygame.event.get():
@@ -101,6 +122,9 @@ while True:
         # Si la posición es la mía, me pinto de azul, si no, de blanco
         color = (0, 150, 255) if [pos[0], pos[1]] == mi_pos else (255, 255, 255)
         pygame.draw.rect(ventana, color, (pos[0], pos[1], 20, 20), border_radius=8)
+    for casa in lista_casas:
+        pygame.draw.rect(ventana, (255, 255, 0), casa)
+    pygame.draw.rect(ventana,(0,255,255),bandera_rect)
 
     pygame.display.flip()
     reloj.tick(60)

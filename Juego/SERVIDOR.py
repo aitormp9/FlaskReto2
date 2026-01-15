@@ -2,12 +2,15 @@ import socket
 import threading
 import random
 
+import pygame
+
 # Configuración
 HOST = '0.0.0.0'
 PORT = 65432
 
 posiciones_iniciales = ["25,25", "1245,25", "25,685", "1246,685"]
-
+casas=["0,0","1210,0","0,650","1210,650"]
+bandera="640,360"
 
 def generar_muros():
     muros = []
@@ -40,11 +43,11 @@ def generar_muros():
 DATOS_MUROS = generar_muros()
 posiciones_actuales = {}
 clientes = {}
-
+CASAS="|".join(casas)
 
 def manejar_jugador(conn, jugador_id):
     pos_inicial = posiciones_iniciales[jugador_id % 4]
-    mensaje_bienvenida = f"START:{pos_inicial}#{DATOS_MUROS}"
+    mensaje_bienvenida = f"START:{pos_inicial}#{DATOS_MUROS}#{CASAS}#{bandera}"
     conn.sendall(mensaje_bienvenida.encode('utf-8'))
 
     posiciones_actuales[jugador_id] = pos_inicial
@@ -69,13 +72,24 @@ def manejar_jugador(conn, jugador_id):
     conn.close()
 
 
+# SERVIDOR.PY
+
+# 1. Crea un bucle de lógica aparte o mételo en el hilo principal
+def logic_loop():
+    while True:
+        estadobandera()  # Aquí es donde ejecutas tu función
+
+        # Después de actualizar la bandera, notificas a todos
+        enviar_estado_global()
+
+        pygame.time.Clock().tick(60)  # Para que no consuma 100% de CPU
 if __name__ == "__main__":
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # EVITA EL ERROR DE BIND REUTILIZANDO EL PUERTO
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind((HOST, PORT))
     server.listen()
-    print("Servidor funcionando. Muros aleatorios generados.")
+    print("Servidor funcionando.")
 
     id_contador = 0
     while True:
