@@ -9,7 +9,8 @@ class bandera:
         self.screen=screen
         self.color="brown"
         self.jugador=None
-        self.tiempo=0
+        self.tiempo_entrega=0
+        self.en_casa = False
         self.esperando=False
     def draw(self):
         pygame.draw.rect(self.screen,self.color,(self.x,self.y,self.ancho,self.alto))
