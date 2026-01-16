@@ -2,7 +2,7 @@ import pygame
 import random
 
 class muro:
-    def __init__(self, screen, x, y, finx, finy):
+    def __init__(self, screen, x, y):
         self.screen = screen
         self.imagen = pygame.image.load("imagen/muro3.jpg")
         self.ancho = random.randint(10, 150)
@@ -10,18 +10,8 @@ class muro:
         self.imagen = pygame.transform.scale(self.imagen, (self.ancho, self.alto))
 
         # Posición aleatoria
-        self.x = random.randint(x, finx)
-        self.y = random.randint(y, finy)
-
-        # Ajustar posición si sale del borde
-        if self.x < 50:
-            self.x += 50
-        if self.y < 50:
-            self.y += 50
-        if self.x + self.ancho > 1180:
-            self.x = 1180 - self.ancho
-        if self.y + self.alto > 620:
-            self.y = 620 - self.alto
+        self.x = x
+        self.y = y
 
     def draw(self):
         # Dibujar la imagen en la pantalla

@@ -185,25 +185,29 @@ while login==True:
     casa4=casa(screen,1210,650)
     p4=jugador(screen,1245,685,casa4,'imagen/p4.png')
     inicio = time.time();
-    muro11=muro(screen,100,100,540,260)#1.1
-    muro12=muro(screen,100,100,540,260)#1.2
-    muro13=muro(screen,100,100,540,260)#1.3
-    muro14=muro(screen,100,100,540,260)#1.4
+    # --- ZONA 1 (Arriba-Izquierda) | Rango X: 100-540, Y: 100-260 ---
+    muro11 = muro(screen, 150, 100, 150, 30)  # Barra horizontal superior
+    muro12 = muro(screen, 400, 100, 30, 120)  # Barra vertical derecha
+    muro13 = muro(screen, 150, 200, 100, 30)  # Barra horizontal inferior
+    muro14 = muro(screen, 300, 160, 40, 40)  # Bloque central
 
-    muro21=muro(screen,740,100,1180,260)#2.1
-    muro22=muro(screen,740,100,1180,260)#2.2
-    muro23=muro(screen,740,100,1180,260)#2.3
-    muro24=muro(screen,740,100,1180,260)#2.4
+    # --- ZONA 2 (Arriba-Derecha) | Rango X: 740-1180, Y: 100-260 ---
+    muro21 = muro(screen, 940, 100, 150, 30)
+    muro22 = muro(screen, 800, 100, 30, 120)
+    muro23 = muro(screen, 940, 200, 100, 30)
+    muro24 = muro(screen, 880, 160, 40, 40)
 
-    muro31=muro(screen,100,460,540,620)#3.1
-    muro32=muro(screen,100,460,540,620)#3.2
-    muro33=muro(screen,100,460,540,620)#3.3
-    muro34=muro(screen,100,460,540,620)#3.4
+    # --- ZONA 3 (Abajo-Izquierda) | Rango X: 100-540, Y: 460-620 ---
+    muro31 = muro(screen, 150, 590, 150, 30)
+    muro32 = muro(screen, 400, 460, 30, 120)
+    muro33 = muro(screen, 150, 460, 100, 30)
+    muro34 = muro(screen, 300, 520, 40, 40)
 
-    muro41=muro(screen,740,460,1180,620)#4.1
-    muro42=muro(screen,740,460,1180,620)#4.2
-    muro43=muro(screen,740,460,1180,620)#4.3
-    muro44=muro(screen,740,460,1180,620)#4.4
+    # --- ZONA 4 (Abajo-Derecha) | Rango X: 740-1180, Y: 460-620 ---
+    muro41 = muro(screen, 940, 590, 150, 30)
+    muro42 = muro(screen, 800, 460, 30, 120)
+    muro43 = muro(screen, 940, 460, 100, 30)
+    muro44 = muro(screen, 880, 520, 40, 40)
     bandera=bandera(screen)
     muros=[]
     casas=[]
