@@ -40,6 +40,7 @@ def finPartida():
     global puntuacion,DuracionPartida,partida,idBBDD
     for i in range(len(puntuacion)):
         if rondas[i]==3:
+            print(puntuacion[i])
             print(f"El Jugador {i+1} ha ganado la partida")
             tiempo=(time.time()-DuracionPartida)
             horas = tiempo // 3600
