@@ -246,7 +246,6 @@ while login==True:
     # BUCLE PRINCIPAL
     while True:
             screen.blit(fondo, (0, 0))
-            print(puntuacion)
             # 1. Movimiento del local (p1)
             keys = pygame.key.get_pressed()
             p_local.old_x, p_local.old_y = p_local.x, p_local.y  # Guardar para colisiones
