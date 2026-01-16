@@ -108,8 +108,6 @@ def estadobandera():
                         pillado.y = pillado.yinicio
                         bandera.jugador = None
 
-
-
         # Tomar la bandera del suelo
         if bandera.jugador==None and jugador.getrect().colliderect(bandera.getrect()):
             bandera.jugador = jugador
