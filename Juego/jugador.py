@@ -12,12 +12,12 @@ class jugador:
         self.casa=casa
         self.xinicio=x
         self.yinicio=y
-        #self.imagennombre==pygame.image.load(imagen)
-        #self.imagen = pygame.transform.scale(self.imagennombre, (self.anchura , self.altura ))
+        self.imagennombre=pygame.image.load(imagen).convert_alpha()
+        self.imagen = pygame.transform.scale(self.imagennombre, (self.anchura , self.altura ))
 
     def draw(self):
-        #self.screen.blit(self.imagen, (self.x, self.y))
-        pygame.draw.rect(self.screen,(0, 0, 0),(self.x, self.y, self.anchura, self.altura),border_radius=8)
+        self.screen.blit(self.imagen, (self.x, self.y))
+        #pygame.draw.rect(self.screen,(self.x, self.y, self.anchura, self.altura),border_radius=8)
 
     def getrect(self):
         return pygame.Rect(self.x,self.y,self.anchura,self.altura)

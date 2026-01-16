@@ -6,14 +6,18 @@ from jugador import jugador
 from casa import casa
 from muro import muro
 from bandera import bandera
+from gamerequests.jugador import GameClient
 
 # --- CONFIGURACIÓN RED ---
-HOST = '127.0.0.1'
+HOST = '192.168.25.46'
 PORT = 2000
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect((HOST, PORT))
-
-
+mi_id = pickle.loads(client.recv(4096))
+print(f"Soy el jugador número: {mi_id}")
+idBBDD=0
+partida = GameClient()
+DuracionPartida = time.time()
 def send_position(x, y):
     try:
         client.sendall(pickle.dumps({"x": x, "y": y}))
@@ -21,72 +25,31 @@ def send_position(x, y):
     except:
         return None
 
+def login():
+    global login,idBBDD,partida
+    email=input("Ingresa tu email: ")
+    j = partida.login(email)
+    if "error" in j:
+       print(j["message"])
+    else:
+        print(j["id"])
+        idBBDD=j["id"]
+        login=True
 
-# --- INICIO PYGAME (Igual que el tuyo) ---
-pygame.init()
-screen = pygame.display.set_mode((1280, 720))
-# ... (Aquí van tus cargas de imágenes, casas, muros y jugadores tal cual los tienes)
-pygame.init()
-screen = pygame.display.set_mode((1280, 720))
-imagen=pygame.image.load('imagen/fondo.jpg').convert_alpha()
-fondo=pygame.transform.scale(imagen,(1280,720))
-clock = pygame.time.Clock()
-casa1=casa(screen,0,0)
-p1=jugador(screen,25,25,casa1,'imagen/p1.png')
-casa2=casa(screen,1210,0)
-p2=jugador(screen,1245,25,casa2,'imagen/p2.png')
-casa3=casa(screen,0,650)
-p3=jugador(screen,25,685,casa3,'imagen/p3.png')
-casa4=casa(screen,1210,650)
-p4=jugador(screen,1245,685,casa4,'imagen/p4.png')
-inicio = time.time();
-muro11=muro(screen,100,100,540,260)#1.1
-muro12=muro(screen,100,100,540,260)#1.2
-muro13=muro(screen,100,100,540,260)#1.3
-muro14=muro(screen,100,100,540,260)#1.4
+def finPartida():
+    global puntuacion,DuracionPartida,partida,idBBDD
+    for i in range(len(puntuacion)):
+        if rondas[i]==3:
+            print(f"El Jugador {i} ha ganado la partida")
+            tiempo=(DuracionPartida-time.time())
+            horas = tiempo // 3600
+            minutos = (tiempo % 3600) // 60
+            segundos = tiempo % 60
+            partida.save_game({idBBDD: puntuacion[mi_id-1]},tiempo)
+            pygame.quit()
+            client.close()
+            exit()
 
-muro21=muro(screen,740,100,1180,260)#2.1
-muro22=muro(screen,740,100,1180,260)#2.2
-muro23=muro(screen,740,100,1180,260)#2.3
-muro24=muro(screen,740,100,1180,260)#2.4
-
-muro31=muro(screen,100,460,540,620)#3.1
-muro32=muro(screen,100,460,540,620)#3.2
-muro33=muro(screen,100,460,540,620)#3.3
-muro34=muro(screen,100,460,540,620)#3.4
-
-muro41=muro(screen,740,460,1180,620)#4.1
-muro42=muro(screen,740,460,1180,620)#4.2
-muro43=muro(screen,740,460,1180,620)#4.3
-muro44=muro(screen,740,460,1180,620)#4.4
-bandera=bandera(screen)
-jugadores=[]
-muros=[]
-casas=[]
-jugadores.append(p1)
-jugadores.append(p2)
-jugadores.append(p3)
-jugadores.append(p4)
-muros.append(muro11)
-muros.append(muro12)
-muros.append(muro13)
-muros.append(muro14)
-muros.append(muro21)
-muros.append(muro22)
-muros.append(muro23)
-muros.append(muro24)
-muros.append(muro31)
-muros.append(muro32)
-muros.append(muro33)
-muros.append(muro34)
-casas.append(casa1)
-casas.append(casa2)
-casas.append(casa3)
-casas.append(casa4)
-velocidad=2;
-pillado=False
-
-# ... (Tus funciones dibujar(), colisiones(), estadobandera() y reiniciar() se quedan igual)
 def dibujar():
     muro11.draw()
     muro12.draw()
@@ -132,6 +95,7 @@ def colisiones(player):
             player.x, player.y = player.old_x, player.old_y
 
 def estadobandera():
+    global puntuacion
     for jugador in jugadores:
         # Robo de la bandera
         if bandera.jugador and bandera.jugador != jugador:
@@ -148,6 +112,7 @@ def estadobandera():
         # Tomar la bandera del suelo
         if bandera.jugador==None and jugador.getrect().colliderect(bandera.getrect()):
             bandera.jugador = jugador
+            puntuacion[mi_id-1]+=1
 
         # Transportar la bandera con el jugador
         if bandera.jugador == jugador:
@@ -176,12 +141,16 @@ def estadobandera():
             bandera.tiempo = time.time()
 
         if bandera.jugador in (casa1, casa2, casa3, casa4):
-            if bandera.esperando is False:
-                bandera.tiempo = time.time()
-                bandera.esperando=True
-            if time.time() - bandera.tiempo >= 2:
-                reiniciar()
-                bandera.esperando=False
+            if bandera.jugador==jugador.casa:
+                if bandera.esperando is False:
+                    bandera.tiempo = time.time()
+                    bandera.esperando=True
+                    print(puntuacion)
+                if time.time() - bandera.tiempo >= 2:
+                    puntuacion[mi_id-1]+=4
+                    rondas[mi_id-1]+=1
+                    reiniciar()
+                    bandera.esperando=False
 
 
 def reiniciar():
@@ -196,42 +165,112 @@ def reiniciar():
     bandera.x=640
     bandera.y=360
     bandera.jugador=None
-# BUCLE PRINCIPAL
-while True:
-    screen.blit(fondo, (0, 0))
+# --- INICIO PYGAME (Igual que el tuyo) ---
+pygame.init()
+login()
+while login==True:
+    screen = pygame.display.set_mode((1280, 720))
+    # ... (Aquí van tus cargas de imágenes, casas, muros y jugadores tal cual los tienes)
+    pygame.init()
+    screen = pygame.display.set_mode((1280, 720))
+    imagen=pygame.image.load('imagen/fondo.jpg').convert_alpha()
+    fondo=pygame.transform.scale(imagen,(1280,720))
+    clock = pygame.time.Clock()
+    casa1=casa(screen,0,0)
+    p1=jugador(screen,25,25,casa1,'imagen/p1.png')
+    casa2=casa(screen,1210,0)
+    p2=jugador(screen,1245,25,casa2,'imagen/p2.png')
+    casa3=casa(screen,0,650)
+    p3=jugador(screen,25,685,casa3,'imagen/p3.png')
+    casa4=casa(screen,1210,650)
+    p4=jugador(screen,1245,685,casa4,'imagen/p4.png')
+    inicio = time.time();
+    muro11=muro(screen,100,100,540,260)#1.1
+    muro12=muro(screen,100,100,540,260)#1.2
+    muro13=muro(screen,100,100,540,260)#1.3
+    muro14=muro(screen,100,100,540,260)#1.4
 
-    # 1. Movimiento del local (p1)
-    keys = pygame.key.get_pressed()
-    p1.old_x, p1.old_y = p1.x, p1.y  # Guardar para colisiones
-    if keys[pygame.K_LEFT] or keys[pygame.K_a]: p1.x -= velocidad
-    if keys[pygame.K_RIGHT] or keys[pygame.K_d]: p1.x += velocidad
-    if keys[pygame.K_UP] or keys[pygame.K_w]: p1.y -= velocidad
-    if keys[pygame.K_DOWN] or keys[pygame.K_s]: p1.y += velocidad
+    muro21=muro(screen,740,100,1180,260)#2.1
+    muro22=muro(screen,740,100,1180,260)#2.2
+    muro23=muro(screen,740,100,1180,260)#2.3
+    muro24=muro(screen,740,100,1180,260)#2.4
 
-    colisiones(p1)  # Comprobar colisión local antes de enviar
+    muro31=muro(screen,100,460,540,620)#3.1
+    muro32=muro(screen,100,460,540,620)#3.2
+    muro33=muro(screen,100,460,540,620)#3.3
+    muro34=muro(screen,100,460,540,620)#3.4
 
-    # 2. Comunicación
-    state = send_position(p1.x, p1.y)
+    muro41=muro(screen,740,460,1180,620)#4.1
+    muro42=muro(screen,740,460,1180,620)#4.2
+    muro43=muro(screen,740,460,1180,620)#4.3
+    muro44=muro(screen,740,460,1180,620)#4.4
+    bandera=bandera(screen)
+    muros=[]
+    casas=[]
+    jugadores=[]
+    jugadores.append(p1)
+    jugadores.append(p2)
+    jugadores.append(p3)
+    jugadores.append(p4)
+    muros.append(muro11)
+    muros.append(muro12)
+    muros.append(muro13)
+    muros.append(muro14)
+    muros.append(muro21)
+    muros.append(muro22)
+    muros.append(muro23)
+    muros.append(muro24)
+    muros.append(muro31)
+    muros.append(muro32)
+    muros.append(muro33)
+    muros.append(muro34)
+    casas.append(casa1)
+    casas.append(casa2)
+    casas.append(casa3)
+    casas.append(casa4)
+    velocidad=2;
+    pillado=False
+    p_local = jugadores[mi_id-1]
+    puntuacion=[0,0,0,0]
+    login=False
+    rondas = [0,0,0,0]
 
-    if state:
-        # Actualizamos a los otros jugadores
-        # Filtramos para no dibujarnos a nosotros mismos dos veces
-        remote_players = [p for addr, p in state['players'].items() if addr != client.getsockname()]
+    # BUCLE PRINCIPAL
+    while True:
+            screen.blit(fondo, (0, 0))
+            print(puntuacion)
+            # 1. Movimiento del local (p1)
+            keys = pygame.key.get_pressed()
+            p_local.old_x, p_local.old_y = p_local.x, p_local.y  # Guardar para colisiones
+            if keys[pygame.K_LEFT] or keys[pygame.K_a]: p_local.x -= velocidad
+            if keys[pygame.K_RIGHT] or keys[pygame.K_d]: p_local.x += velocidad
+            if keys[pygame.K_UP] or keys[pygame.K_w]: p_local.y -= velocidad
+            if keys[pygame.K_DOWN] or keys[pygame.K_s]: p_local.y += velocidad
 
-        for i, pdata in enumerate(remote_players):
-            if i + 1 < len(jugadores):  # p2, p3, p4
-                jugadores[i + 1].x = pdata['x']
-                jugadores[i + 1].y = pdata['y']
+            colisiones(p_local)  # Comprobar colisión local antes de enviar
 
-    # 3. Lógica y Dibujo
-    estadobandera()
-    dibujar()
+            # 2. Comunicación
+            state = send_position(p_local.x, p_local.y)
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            client.close()
-            exit()
+            if state:
+                # Actualizamos a los otros jugadores
+                # Filtramos para no dibujarnos a nosotros mismos dos veces
+                remote_players = [p for addr, p in state['players'].items() if addr != client.getsockname()]
 
-    pygame.display.update()
-    clock.tick(60)
+                for i, pdata in enumerate(remote_players):
+                    if i + 1 < len(jugadores):  # p2, p3, p4
+                        jugadores[i + 1].x = pdata['x']
+                        jugadores[i + 1].y = pdata['y']
+
+            # 3. Lógica y Dibujo
+            estadobandera()
+            dibujar()
+            finPartida()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    client.close()
+                    exit()
+
+            pygame.display.update()
+            clock.tick(60)
