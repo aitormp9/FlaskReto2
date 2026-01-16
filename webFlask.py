@@ -1,12 +1,12 @@
 import requests
 from flask import Flask, render_template, request
 import threading
-
 app = Flask(__name__, template_folder='templates')
 #urlApi = "http://localhost:8080/api/v1"
 urlApi = "http://3.233.57.10:8080/api/v1"
 
-estado_bandera = 'libre'
+estado_bandera =None
+estadoActual_Bandera=None
 jugador_bandera= None
 estado_partida = 'sin empezar'
 
@@ -36,13 +36,21 @@ def posiciones():
 
 @app.route('/estadoBandera', methods=['GET', 'POST'])
 def estadoBandera():
-        return render_template('estadoBandera.html', name="estadoBandera", estado=estado_bandera)
-
-def actualizar_bandera(nuevo_estado, jugador = None):
-    global estado_bandera
-    if nuevo_estado in ["libre", "capturada"]:
-        estado_bandera = nuevo_estado
-        jugador_bandera = jugador
+        global estado_bandera, jugador_bandera, estadoActual_Bandera
+        print(estado_bandera, estadoActual_Bandera)
+        if estado_bandera == None:
+            estadoActual_Bandera = "libre"
+        else:
+            estadoActual_Bandera = "ocupada"
+            jugador_bandera = estado_bandera
+        return render_template('estadoBandera.html', name="estadoBandera", estado=estado_bandera, jugador=jugador_bandera)
+def actualizar_bandera():
+    global estado_bandera, jugador_bandera,estadoActual_Bandera
+    if estado_bandera==None:
+        estadoActual_Bandera = "libre"
+    else:
+        estadoActual_Bandera = "ocupada"
+        jugador_bandera = estado_bandera
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')

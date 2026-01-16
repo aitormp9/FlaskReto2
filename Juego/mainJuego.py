@@ -7,17 +7,8 @@ from casa import casa
 from muro import muro
 from bandera import bandera
 from gamerequests.jugador import GameClient
+import webFlask
 
-# --- CONFIGURACIÓN RED ---
-HOST = '192.168.25.46'
-PORT = 2000
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect((HOST, PORT))
-mi_id = pickle.loads(client.recv(4096))
-print(f"Soy el jugador número: {mi_id}")
-idBBDD=0
-partida = GameClient()
-DuracionPartida = time.time()
 def send_position(x, y):
     try:
         client.sendall(pickle.dumps({"x": x, "y": y}))
@@ -94,7 +85,6 @@ def colisiones(player):
     for muro in muros:
         if (player.getrect().colliderect(muro.getrect())):
             player.x, player.y = player.old_x, player.old_y
-
 def estadobandera():
     global puntuacion
     for jugador in jugadores:
@@ -112,6 +102,8 @@ def estadobandera():
         if bandera.jugador==None and jugador.getrect().colliderect(bandera.getrect()):
             bandera.jugador = jugador
             puntuacion[mi_id-1]+=1
+            webFlask.jugador_bandera=jugador
+            print(jugador)
 
         # Transportar la bandera con el jugador
         if bandera.jugador == jugador:
@@ -164,6 +156,16 @@ def reiniciar():
     bandera.x=640
     bandera.y=360
     bandera.jugador=None
+# --- CONFIGURACIÓN RED ---
+HOST = '192.168.25.46'
+PORT = 2000
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client.connect((HOST, PORT))
+mi_id = pickle.loads(client.recv(4096))
+print(f"Soy el jugador número: {mi_id}")
+idBBDD=0
+partida = GameClient()
+DuracionPartida = time.time()
 # --- INICIO PYGAME (Igual que el tuyo) ---
 pygame.init()
 login()
@@ -255,19 +257,19 @@ while login==True:
 
             colisiones(p_local)  # Comprobar colisión local antes de enviar
 
-            # 2. Comunicación
+            # --- En main.py ---
             state = send_position(p_local.x, p_local.y)
 
-            if state:
-                # Actualizamos a los otros jugadores
-                # Filtramos para no dibujarnos a nosotros mismos dos veces
-                remote_players = [p for addr, p in state['players'].items() if addr != client.getsockname()]
-
-                for i, pdata in enumerate(remote_players):
-                    if i + 1 < len(jugadores):  # p2, p3, p4
-                        jugadores[i + 1].x = pdata['x']
-                        jugadores[i + 1].y = pdata['y']
-
+            if state and 'players' in state:
+                # Recorremos el diccionario usando la CLAVE (que es el ID real)
+                for p_id, pdata in state['players'].items():
+                    if p_id != mi_id:
+                        # IMPORTANTE: Usamos p_id directamente para saber qué muñeco mover
+                        # Si p_id es 1, movemos jugadores[0]. Si es 3, movemos jugadores[2]
+                        indice = p_id - 1
+                        if 0 <= indice < len(jugadores):
+                            jugadores[indice].x = pdata['x']
+                            jugadores[indice].y = pdata['y']
             # 3. Lógica y Dibujo
             estadobandera()
             dibujar()
