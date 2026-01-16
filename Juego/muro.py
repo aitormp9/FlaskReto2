@@ -2,11 +2,11 @@ import pygame
 import random
 
 class muro:
-    def __init__(self, screen, x, y):
+    def __init__(self, screen, x, y,ancho ,alto):
         self.screen = screen
         self.imagen = pygame.image.load("imagen/muro3.jpg")
-        self.ancho = random.randint(10, 150)
-        self.alto = random.randint(10, 200)
+        self.ancho = ancho
+        self.alto = alto
         self.imagen = pygame.transform.scale(self.imagen, (self.ancho, self.alto))
 
         # Posición aleatoria
