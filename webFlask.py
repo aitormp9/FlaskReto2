@@ -1,15 +1,23 @@
 import requests
 from flask import Flask, render_template, request
 import threading
-app = Flask(__name__, template_folder='templates')
-#urlApi = "http://localhost:8080/api/v1"
-urlApi = "http://3.233.57.10:8080/api/v1"
+import sys
+import os
 
-estado_bandera =None
-estadoActual_Bandera=None
-jugador_bandera= None
+# 1. Configuración de rutas
+base_path = os.path.dirname(os.path.abspath(__file__))
+juego_path = os.path.join(base_path, 'Juego')
+
+if juego_path not in sys.path:
+    sys.path.append(juego_path)
+
+# 2. Variables de estado globales
+# IMPORTANTE: Estas variables las actualizará mainJuego.py directamente
+jugador_con_bandera = None
+estado_actual_bandera = "libre"
 estado_partida = 'sin empezar'
-
+urlApi = "http://3.233.57.10:8080/api/v1"
+app = Flask(__name__, template_folder='templates')
 @app.route('/', methods=['GET', 'POST'])
 def inicio():
     return render_template('menuInicio.html', name="menuInicio")
@@ -34,16 +42,12 @@ def posiciones():
     ranking = response.json()
     return render_template('posiciones.html', name="posiciones", ranking=ranking)
 
-@app.route('/estadoBandera', methods=['GET', 'POST'])
+@app.route('/estadoBandera')
 def estadoBandera():
-        global estado_bandera, jugador_bandera, estadoActual_Bandera
-        print(estado_bandera, estadoActual_Bandera)
-        if estado_bandera == None:
-            estadoActual_Bandera = "libre"
-        else:
-            estadoActual_Bandera = "ocupada"
-            jugador_bandera = estado_bandera
-        return render_template('estadoBandera.html', name="estadoBandera", estado=estado_bandera, jugador=jugador_bandera)
+    # Aquí Flask solo lee las variables que el juego le "empuja"
+    return render_template('estadoBandera.html',
+                           estado=estado_actual_bandera,
+                           jugador=jugador_con_bandera)
 def actualizar_bandera():
     global estado_bandera, jugador_bandera,estadoActual_Bandera
     if estado_bandera==None:
