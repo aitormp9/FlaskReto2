@@ -208,6 +208,7 @@ def estadobandera():
                     puntuacion[mi_id - 1] += 4
                     rondas[mi_id - 1] += 1
                 reiniciar()
+                contador()
                 bandera.esperando=False
 
 def reiniciar():
