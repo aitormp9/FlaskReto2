@@ -83,7 +83,6 @@ def contador():#Funcion para contador
             rect.topleft = posiciones[i]
 
         screen.blit(texto_surface, rect)
-
 def finPartida():#Verificacion de final de partida y envio de datos
     global puntuacion,DuracionPartida,partida,idBBDD
     for i in range(len(puntuacion)):
@@ -153,63 +152,50 @@ def colisiones(player):#Todas las colisiones excepto la bandera
 
 
 def estadobandera():
-    global rondas,puntacion
+    global rondas, puntuacion
+
     for jugador in jugadores:
-        # Robo de la bandera
+        # 1. ROBO DE LA BANDERA
         if bandera.jugador and bandera.jugador != jugador:
             if jugador.getrect().colliderect(bandera.getrect()):
-                print(bandera.jugador)
                 for pillado in jugadores:
                     if pillado is bandera.jugador:
-                        pillado.x = pillado.xinicio
-                        pillado.y = pillado.yinicio
-                        bandera.x, bandera.y = 640, 360
-                        bandera.jugador = None
+                        pillado.x, pillado.y = pillado.xinicio, pillado.yinicio
+                bandera.x, bandera.y = 640, 360
+                bandera.jugador = None
 
-
-
-        # Tomar la bandera del suelo
-        if bandera.jugador==None and jugador.getrect().colliderect(bandera.getrect()):
+        # 2. TOMAR DEL SUELO
+        if bandera.jugador == None and jugador.getrect().colliderect(bandera.getrect()):
             bandera.jugador = jugador
             if jugador == p_local:
                 puntuacion[mi_id - 1] += 1
-        # Transportar la bandera con el jugador
+
+        # 3. TRANSPORTAR
         if bandera.jugador == jugador:
             bandera.x = jugador.x + 20
             bandera.y = jugador.y
 
-        if bandera.jugador==p1 and casa1.getrect().colliderect(jugador.getrect()):
-                bandera.x = casa1.x + 7
-                bandera.y = casa1.y + 7
-                bandera.jugador = casa1
-                bandera.tiempo=time.time()
-        if bandera.jugador==p2 and casa2.getrect().colliderect(jugador.getrect()):
-                bandera.x = casa2.x + 7
-                bandera.y = casa2.y + 7
-                bandera.jugador = casa2
-                bandera.tiempo=time.time()
-        if bandera.jugador == p3 and casa3.getrect().colliderect(jugador.getrect()):
-            bandera.x = casa3.x + 7
-            bandera.y = casa3.y + 7
-            bandera.jugador = casa3
-            bandera.tiempo = time.time()
-        if bandera.jugador == p4 and casa4.getrect().colliderect(jugador.getrect()):
-            bandera.x = casa4.x + 7
-            bandera.y = casa4.y + 7
-            bandera.jugador = casa4
-            bandera.tiempo = time.time()
+            # 4. COLISIÓN CON SU CASA (Aquí es donde activamos el tiempo)
+            if jugador.casa.getrect().colliderect(jugador.getrect()):
+                bandera.x = jugador.casa.x + 7
+                bandera.y = jugador.casa.y + 7
+                bandera.jugador = jugador.casa
+                bandera.tiempo = time.time()  # <--- SE PONE AQUÍ
 
-        if bandera.jugador in (casa1, casa2, casa3, casa4):
+        # 5. LÓGICA DE PUNTUACIÓN (2 segundos)
+        if bandera.jugador == jugador.casa:
             if bandera.esperando is False:
                 bandera.tiempo = time.time()
-                bandera.esperando=True
+                bandera.esperando = True
+
             if time.time() - bandera.tiempo >= 2:
                 if jugador == p_local:
                     puntuacion[mi_id - 1] += 4
                     rondas[mi_id - 1] += 1
+
                 reiniciar()
-                contador()
-                bandera.esperando=False
+                bandera.esperando = False
+                break
 
 def reiniciar():
     p1.x=25
