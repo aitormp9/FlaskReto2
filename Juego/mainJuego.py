@@ -8,14 +8,43 @@ from casa import casa
 from muro import muro
 from bandera import bandera
 from gamerequests.jugador import GameClient
-
+# --- CONFIGURACIÓN RED ---
+HOST = 'localhost'
+PORT = 2000
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client.connect((HOST, PORT))
+mi_id = pickle.loads(client.recv(4096))
+color=None
+if mi_id==1:
+    color="rojo"
+if mi_id==2:
+    color="Azul"
+if mi_id==3:
+    color="verde"
+if mi_id==4:
+    color="Naranja"
+print(f"Jugador Número: {mi_id} = Color: {color}")
+idBBDD=0
+DuracionPartida = time.time()
 lock=threading.Lock()
 partida = GameClient()
 sesion=False
-def envioPosicion(x, y):#Funcion para posiciones del jugador
+
+
+def envioPosicion(x, y):
     try:
-        client.sendall(pickle.dumps({"x": x, "y": y}))
-        return pickle.loads(client.recv(4096))
+        # Creamos el paquete con TODA la información local
+        paquete = {
+            "x": x,
+            "y": y,
+            "puntuacion": puntuacion[mi_id - 1],  # Envía tu puntuación actual
+            "rondas": rondas[mi_id - 1]  # Envía tu ronda actual
+        }
+        client.sendall(pickle.dumps(paquete))
+
+        # Recibimos el estado completo del servidor
+        respuesta = client.recv(8192)
+        return pickle.loads(respuesta)
     except:
         return None
 
@@ -29,6 +58,7 @@ def iniciosesion():#Funcion de iniciar sesion vinculado a Odoo
         print(+j["id"]) #id del jugador en la bbdd
         idBBDD=j["id"]
         sesion=True
+        print(sesion)
 
 def contador():#Funcion para contador
     posiciones = [
@@ -191,31 +221,10 @@ def reiniciar():
     bandera.x=640
     bandera.y=360
     bandera.jugador=None
-# --- CONFIGURACIÓN RED ---
-try:
-    iniciosesion()
-except:
-    print("No se pudo iniciar sesion")
-HOST = '192.168.25.46'
-PORT = 2000
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect((HOST, PORT))
-mi_id = pickle.loads(client.recv(4096))
-color=None
-if mi_id==1:
-    color="rojo"
-if mi_id==2:
-    color="Azul"
-if mi_id==3:
-    color="verde"
-if mi_id==4:
-    color="Naranja"
-print(f"Jugador Número: {mi_id} = Color: {color}")
-idBBDD=0
-DuracionPartida = time.time()
-print(sesion)
+
 pygame.init()
 pygame.display.set_caption("Captura la bandera - Game Hub")
+iniciosesion()
 if sesion:
     pygame.init()
     fuente_contador = pygame.font.Font(None, 32)
