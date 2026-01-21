@@ -319,6 +319,11 @@ if sesion:
                 print("Error con las colisiones")
             try:
                 state = envioPosicion(p_local.x, p_local.y)
+                # En el cliente, cuando recibes el 'state'
+                if state:
+                    with lock:  # Tu lock local de pygame
+                        puntuacion = state["puntuacion"]
+                        rondas = state["rondas"]
             except:
                 print("Error con el envio de datos")
             if state and 'players' in state:

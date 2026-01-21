@@ -9,7 +9,9 @@ server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((HOST, PORT))
 server.listen()
 
-# El estado global del juego
+# Usamos un Lock para que los hilos no modifiquen el dict al mismo tiempo
+state_lock = threading.Lock()
+
 game_state = {
     "players": {},
     "puntuacion": [0, 0, 0, 0],
@@ -18,45 +20,51 @@ game_state = {
 
 
 def handle_client(conn, addr, player_id):
-    print(f"[NUEVA CONEXIÓN] Jugador {player_id} conectado desde {addr}")
-    conn.send(pickle.dumps(player_id))
+    print(f"[CONECTADO] Jugador {player_id}")
+    try:
+        conn.send(pickle.dumps(player_id))
 
-    while True:
-        try:
+        while True:
             data = conn.recv(4096)
             if not data: break
 
             incoming = pickle.loads(data)
 
-            # Actualizamos posición del jugador
-            game_state["players"][player_id] = {
-                "x": incoming["x"],
-                "y": incoming["y"]
-            }
+            with state_lock:
+                # Actualizar posición
+                game_state["players"][player_id] = {
+                    "x": incoming["x"],
+                    "y": incoming["y"]
+                }
 
-            # El servidor confía en la actualización de puntos del cliente
-            game_state["puntuacion"] = incoming["puntuacion"]
-            game_state["rondas"] = incoming["rondas"]
+                # REGLA DE ORO: Solo actualizamos si el valor recibido es mayor
+                # al que ya tenemos (evita que un jugador resetee a los demás)
+                for i in range(4):
+                    if incoming["puntuacion"][i] > game_state["puntuacion"][i]:
+                        game_state["puntuacion"][i] = incoming["puntuacion"][i]
+                    if incoming["rondas"][i] > game_state["rondas"][i]:
+                        game_state["rondas"][i] = incoming["rondas"][i]
 
-            # Respondemos con el estado completo a todos
-            conn.sendall(pickle.dumps(game_state))
-        except:
-            break
+                # Enviamos la copia actualizada
+                conn.sendall(pickle.dumps(game_state))
 
-    print(f"[DESCONEXIÓN] Jugador {player_id} salió.")
-    if player_id in game_state["players"]:
-        del game_state["players"][player_id]
-    conn.close()
+    except Exception as e:
+        print(f"[ERROR] Jugador {player_id}: {e}")
+    finally:
+        with state_lock:
+            if player_id in game_state["players"]:
+                del game_state["players"][player_id]
+        conn.close()
 
 
-print("Servidor escuchando en el puerto 2000...")
+print("Servidor iniciado en puerto 2000...")
 while True:
     conn, addr = server.accept()
-    nuevo_id = 1
-    while nuevo_id in game_state["players"]:
-        nuevo_id += 1
+    # Asignar ID basado en slots libres 1-4
+    with state_lock:
+        nuevo_id = next((i for i in range(1, 5) if i not in game_state["players"]), None)
 
-    if nuevo_id <= 4:
-        threading.Thread(target=handle_client, args=(conn, addr, nuevo_id)).start()
+    if nuevo_id:
+        threading.Thread(target=handle_client, args=(conn, addr, nuevo_id), daemon=True).start()
     else:
         conn.close()
