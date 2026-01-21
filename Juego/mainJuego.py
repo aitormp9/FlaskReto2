@@ -169,17 +169,29 @@ def estadobandera():
                         bandera.jugador = None
 
         # 2. TOMAR LA BANDERA DEL SUELO
+        if bandera.jugador == None and jugador.getrect().colliderect(bandera.getrect()):
+            bandera.jugador = jugador
+            # Solo sumamos el punto de "recogida" si el que la toca eres TÚ
+            if jugador == p_local:
+                puntuacion[mi_id - 1] += 1
+            print(f"Bandera recogida por: {jugador}")
 
-        if bandera.jugador==p1 and casa1.getrect().colliderect(jugador.getrect()):
+        # 3. TRANSPORTAR LA BANDERA
+        if bandera.jugador == jugador:
+            bandera.x = jugador.x + 20
+            bandera.y = jugador.y
+
+        # 4. COLISIÓN CON LAS 4 CASAS
+        if bandera.jugador == p1 and casa1.getrect().colliderect(jugador.getrect()):
             bandera.x = casa1.x + 30
             bandera.y = casa1.y + 10
             bandera.jugador = casa1
-            bandera.tiempo=time.time()
-        if bandera.jugador==p2 and casa2.getrect().colliderect(jugador.getrect()):
+            bandera.tiempo = time.time()
+        if bandera.jugador == p2 and casa2.getrect().colliderect(jugador.getrect()):
             bandera.x = casa2.x + 30
             bandera.y = casa2.y + 10
             bandera.jugador = casa2
-            bandera.tiempo=time.time()
+            bandera.tiempo = time.time()
         if bandera.jugador == p3 and casa3.getrect().colliderect(jugador.getrect()):
             bandera.x = casa3.x + 30
             bandera.y = casa3.y + 10
