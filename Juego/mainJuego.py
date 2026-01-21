@@ -157,7 +157,7 @@ def estadobandera():
 
     for jugador in jugadores:
         # 1. ROBO DE LA BANDERA
-        if bandera.jugador and bandera.jugador != jugador:
+        if bandera.jugador and bandera.jugador != jugador and bandera.jugador not in casas:
             if jugador.getrect().colliderect(bandera.getrect()):
                 for pillado in jugadores:
                     if pillado is bandera.jugador:
