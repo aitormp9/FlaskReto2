@@ -154,8 +154,10 @@ def colisiones(player):#Todas las colisiones excepto la bandera
 
 def estadobandera():
     global puntuacion, rondas
+    print(bandera.jugador)
     for jugador in jugadores:
-        # 1. ROBO DE LA BANDERA (Tu lógica original)
+        # 1. ROBO DE LA BANDERA
+        # Si alguien lleva la bandera y otro lo toca, el que la llevaba vuelve al inicio
         if bandera.jugador and bandera.jugador != jugador:
             if jugador.getrect().colliderect(bandera.getrect()):
                 for pillado in jugadores:
@@ -167,56 +169,44 @@ def estadobandera():
                         bandera.jugador = None
 
         # 2. TOMAR LA BANDERA DEL SUELO
-        if bandera.jugador == None and jugador.getrect().colliderect(bandera.getrect()):
-            bandera.jugador = jugador
-            if jugador == p_local:
-                puntuacion[mi_id - 1] += 1
 
-        # 3. TRANSPORTAR LA BANDERA
-        # IMPORTANTE: Solo se mueve con el jugador si NO ha llegado a la casa todavía
-        if bandera.jugador == jugador:
-            bandera.x = jugador.x + 20
-            bandera.y = jugador.y
-
-        # 4. COLISIÓN CON LAS 4 CASAS (Corregido para que no desaparezca)
-        # Solo p1 puede meterla en casa1, etc.
-        if bandera.jugador == p1 and casa1.getrect().colliderect(p1.getrect()):
-            bandera.x, bandera.y = casa1.x + 30, casa1.y + 10
+        if bandera.jugador==p1 and casa1.getrect().colliderect(jugador.getrect()):
+            bandera.x = casa1.x + 30
+            bandera.y = casa1.y + 10
             bandera.jugador = casa1
-            bandera.tiempo = time.time()
-
-        elif bandera.jugador == p2 and casa2.getrect().colliderect(p2.getrect()):
-            bandera.x, bandera.y = casa2.x + 30, casa2.y + 10
+            bandera.tiempo=time.time()
+        if bandera.jugador==p2 and casa2.getrect().colliderect(jugador.getrect()):
+            bandera.x = casa2.x + 30
+            bandera.y = casa2.y + 10
             bandera.jugador = casa2
-            bandera.tiempo = time.time()
-
-        elif bandera.jugador == p3 and casa3.getrect().colliderect(p3.getrect()):
-            bandera.x, bandera.y = casa3.x + 30, casa3.y + 10
+            bandera.tiempo=time.time()
+        if bandera.jugador == p3 and casa3.getrect().colliderect(jugador.getrect()):
+            bandera.x = casa3.x + 30
+            bandera.y = casa3.y + 10
             bandera.jugador = casa3
             bandera.tiempo = time.time()
-
-        elif bandera.jugador == p4 and casa4.getrect().colliderect(p4.getrect()):
-            bandera.x, bandera.y = casa4.x + 30, casa4.y + 10
+        if bandera.jugador == p4 and casa4.getrect().colliderect(jugador.getrect()):
+            bandera.x = casa4.x + 30
+            bandera.y = casa4.y + 10
             bandera.jugador = casa4
             bandera.tiempo = time.time()
 
-        # 5. LÓGICA DE PUNTUACIÓN
+        # 5. LÓGICA DE PUNTUACIÓN Y RONDAS
+        # Si la bandera está en una casa y es la casa de ese jugador
         if bandera.jugador in (casa1, casa2, casa3, casa4):
-            # Comprobar si la bandera está en LA casa que le toca al jugador
-            if (bandera.jugador == casa1 and jugador == p1) or \
-                    (bandera.jugador == casa2 and jugador == p2) or \
-                    (bandera.jugador == casa3 and jugador == p3) or \
-                    (bandera.jugador == casa4 and jugador == p4):
-
+            if bandera.jugador == jugador.casa:
                 if bandera.esperando is False:
                     bandera.tiempo = time.time()
                     bandera.esperando = True
 
+                # Si pasa 1 segundo la bandera en la casa
                 if time.time() - bandera.tiempo >= 1:
+                    # MUY IMPORTANTE: Solo sumas si el jugador que ha anotado eres TÚ
                     if jugador == p_local:
                         puntuacion[mi_id - 1] += 4
                         rondas[mi_id - 1] += 1
-                        reiniciar()
+                        reiniciar()  # Resetea posiciones
+                        contador()  # Actualiza visualmente
                     bandera.esperando = False
 def reiniciar():
     p1.x=25
