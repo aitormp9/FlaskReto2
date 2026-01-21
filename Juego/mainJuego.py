@@ -177,11 +177,55 @@ def estadobandera():
             bandera.y = jugador.y
 
         # 4. CASAS (Tus 4 bloques originales de p1, p2, p3, p4...)
-        if bandera.jugador == p1 and casa1.getrect().colliderect(jugador.getrect()):
-            bandera.x, bandera.y = casa1.x + 30, casa1.y + 10
-            bandera.jugador = casa1
-            bandera.tiempo = time.time()
-        # ... (repite para p2, p3, p4 exactamente como los tenías) ...
+        def estadobandera():
+            global puntuacion, rondas
+            for jugador in jugadores:
+                # 1. ROBO DE LA BANDERA
+                # Si alguien lleva la bandera y otro lo toca, el que la llevaba vuelve al inicio
+                if bandera.jugador and bandera.jugador != jugador:
+                    if jugador.getrect().colliderect(bandera.getrect()):
+                        for pillado in jugadores:
+                            if pillado is bandera.jugador:
+                                pillado.x = pillado.xinicio
+                                pillado.y = pillado.yinicio
+                                bandera.x = 640
+                                bandera.y = 360
+                                bandera.jugador = None
+
+                # 2. TOMAR LA BANDERA DEL SUELO
+                if bandera.jugador == None and jugador.getrect().colliderect(bandera.getrect()):
+                    bandera.jugador = jugador
+                    # Solo sumamos el punto de "recogida" si el que la toca eres TÚ
+                    if jugador == p_local:
+                        puntuacion[mi_id - 1] += 1
+                    print(f"Bandera recogida por: {jugador}")
+
+                # 3. TRANSPORTAR LA BANDERA
+                if bandera.jugador == jugador:
+                    bandera.x = jugador.x + 20
+                    bandera.y = jugador.y
+
+                # 4. COLISIÓN CON LAS 4 CASAS
+                # Casa 1
+                if bandera.jugador == p1 and casa1.getrect().colliderect(jugador.getrect()):
+                    bandera.x, bandera.y = casa1.x + 30, casa1.y + 10
+                    bandera.jugador = casa1
+                    bandera.tiempo = time.time()
+                # Casa 2
+                elif bandera.jugador == p2 and casa2.getrect().colliderect(jugador.getrect()):
+                    bandera.x, bandera.y = casa2.x + 30, casa2.y + 10
+                    bandera.jugador = casa2
+                    bandera.tiempo = time.time()
+                # Casa 3
+                elif bandera.jugador == p3 and casa3.getrect().colliderect(jugador.getrect()):
+                    bandera.x, bandera.y = casa3.x + 30, casa3.y + 10
+                    bandera.jugador = casa3
+                    bandera.tiempo = time.time()
+                # Casa 4
+                elif bandera.jugador == p4 and casa4.getrect().colliderect(jugador.getrect()):
+                    bandera.x, bandera.y = casa4.x + 30, casa4.y + 10
+                    bandera.jugador = casa4
+                    bandera.tiempo = time.time()
 
         # 5. PUNTOS EN CASA
         if bandera.jugador in (casa1, casa2, casa3, casa4):
