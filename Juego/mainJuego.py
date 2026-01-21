@@ -12,11 +12,20 @@ from gamerequests.jugador import GameClient
 lock=threading.Lock()
 partida = GameClient()
 sesion=False
-def envioPosicion(x, y):#Funcion para posiciones del jugador
+def envioPosicion(x, y):
+    global puntuacion, rondas
     try:
-        client.sendall(pickle.dumps({"x": x, "y": y}))
+        # Enviamos nuestra posición y nuestras listas de puntos
+        payload = {
+            "x": x,
+            "y": y,
+            "puntuacion": puntuacion,
+            "rondas": rondas
+        }
+        client.sendall(pickle.dumps(payload))
         return pickle.loads(client.recv(4096))
-    except:
+    except Exception as e:
+        print(f"Error de red: {e}")
         return None
 
 def iniciosesion():#Funcion de iniciar sesion vinculado a Odoo
