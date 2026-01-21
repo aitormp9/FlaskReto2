@@ -333,9 +333,19 @@ if sesion:
                 print("Error con el envio de datos")
             # --- Dentro del bucle principal del cliente ---
             state = envioPosicion(p_local.x, p_local.y)
-
             if state:
-                # 1. Actualizar posiciones de los demás
+                # --- AQUÍ VA EL REINICIAR PARA LOS DEMÁS ---
+                # Si la suma de rondas del servidor es mayor que la nuestra, alguien anotó
+                if sum(state['rondas']) > sum(rondas):
+                    reiniciar()
+
+                # Actualizamos las puntuaciones y rondas para verlas en el contador
+                for i in range(4):
+                    if i != (mi_id - 1):
+                        puntuacion[i] = state['puntuacion'][i]
+                        rondas[i] = state['rondas'][i]
+
+                # Actualizar posiciones de los otros (esto ya lo tenías)
                 for p_id, pdata in state['players'].items():
                     if p_id != mi_id:
                         indice = p_id - 1
