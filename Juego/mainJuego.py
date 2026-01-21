@@ -196,7 +196,7 @@ try:
     iniciosesion()
 except:
     print("No se pudo iniciar sesion")
-HOST = 'localhost'
+HOST = '192.168.25.46'
 PORT = 2000
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect((HOST, PORT))
