@@ -23,7 +23,8 @@ if mi_id==3:
     color="verde"
 if mi_id==4:
     color="Naranja"
-print(f"Jugador Número: {mi_id} = Color: {color}")
+
+print(f"Color del Jugador: {color}")
 idBBDD=0
 DuracionPartida = time.time()
 lock=threading.Lock()
@@ -59,10 +60,10 @@ def iniciosesion():#Funcion de iniciar sesion vinculado a Odoo
     if "error" in j:
        print(j["message"])
     else:
-        print(+j["id"]) #id del jugador en la bbdd
+        #print(+j["id"]) #id del jugador en la bbdd
         idBBDD=j["id"]
         sesion=True
-        print(sesion)
+        #print(sesion)
 
 def contador():#Funcion para contador
     posiciones = [
@@ -302,7 +303,7 @@ if sesion:
             # 2. DETECTAR PUNTO (Tu nueva lógica de revisión)
             # Comparamos la suma total de rondas del servidor con nuestra suma local antigua
             if sum(state['rondas']) > sum(rondas_viejas):
-                print("¡Punto detectado en el servidor! Reiniciando...")
+                #print("Punto detectado")
                 reiniciar()
 
             # 3. ACTUALIZAR LOS DATOS LOCALES
