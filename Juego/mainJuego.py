@@ -150,68 +150,76 @@ def colisiones(player):#Todas las colisiones excepto la bandera
     for muro in muros:
         if (player.getrect().colliderect(muro.getrect())):
             player.x, player.y = player.old_x, player.old_y
+
+
 def estadobandera():
-    global puntuacion
+    global puntuacion, rondas
+    # Iteramos por todos los jugadores para ver colisiones
     for jugador in jugadores:
-        # Robo de la bandera
+
+        # 1. ROBO DE BANDERA
         if bandera.jugador and bandera.jugador != jugador:
             if jugador.getrect().colliderect(bandera.getrect()):
-                print(bandera.jugador)
-                for pillado in jugadores:
-                    if pillado is bandera.jugador:
-                        pillado.x = pillado.xinicio
-                        pillado.y = pillado.yinicio
-                        bandera.x = 640
-                        bandera.y = 360
-                        bandera.jugador = None
+                # Si el que roba es el JUGADOR LOCAL (Tú)
+                if jugador == p_local:
+                    for pillado in jugadores:
+                        if pillado is bandera.jugador:
+                            pillado.x = pillado.xinicio
+                            pillado.y = pillado.yinicio
+                            bandera.x = 640
+                            bandera.y = 360
+                            bandera.jugador = None
+                # Si el que roba es OTRO, el servidor nos dirá las nuevas posiciones
+                # por eso no forzamos el reinicio aquí para otros
 
-        # Tomar la bandera del suelo
-        if bandera.jugador==None and jugador.getrect().colliderect(bandera.getrect()):
-            bandera.jugador = jugador
-            puntuacion[mi_id-1]+=1
-            #webFlask.jugador_bandera=jugador
-            #print(webFlask.jugador_bandera)
-            print(jugador)
+        # 2. TOMAR LA BANDERA DEL SUELO
+        if bandera.jugador == None and jugador.getrect().colliderect(bandera.getrect()):
+            # Solo permitimos que el JUGADOR LOCAL gestione su propia recogida
+            if jugador == p_local:
+                bandera.jugador = jugador
+                # Sumamos punto por recoger (solo a nuestro ID)
+                puntuacion[mi_id - 1] += 1
+                print(f"Has recogido la bandera")
 
-        # Transportar la bandera con el jugador
+        # 3. TRANSPORTAR LA BANDERA
         if bandera.jugador == jugador:
             bandera.x = jugador.x + 20
             bandera.y = jugador.y
-        # Colision casa bandera y jugador
-        if bandera.jugador==p1 and casa1.getrect().colliderect(jugador.getrect()):
-            bandera.x = casa1.x + 30
-            bandera.y = casa1.y + 10
+
+        # 4. COLISIÓN CON LAS CASAS
+        # Usamos p1, p2, p3, p4 para las casas como tenías
+        if bandera.jugador == p1 and casa1.getrect().colliderect(jugador.getrect()):
+            bandera.x, bandera.y = casa1.x + 30, casa1.y + 10
             bandera.jugador = casa1
-            bandera.tiempo=time.time()
-        if bandera.jugador==p2 and casa2.getrect().colliderect(jugador.getrect()):
-            bandera.x = casa2.x + 30
-            bandera.y = casa2.y + 10
+            bandera.tiempo = time.time()
+        elif bandera.jugador == p2 and casa2.getrect().colliderect(jugador.getrect()):
+            bandera.x, bandera.y = casa2.x + 30, casa2.y + 10
             bandera.jugador = casa2
-            bandera.tiempo=time.time()
-        if bandera.jugador == p3 and casa3.getrect().colliderect(jugador.getrect()):
-            bandera.x = casa3.x + 30
-            bandera.y = casa3.y + 10
+            bandera.tiempo = time.time()
+        elif bandera.jugador == p3 and casa3.getrect().colliderect(jugador.getrect()):
+            bandera.x, bandera.y = casa3.x + 30, casa3.y + 10
             bandera.jugador = casa3
             bandera.tiempo = time.time()
-        if bandera.jugador == p4 and casa4.getrect().colliderect(jugador.getrect()):
-            bandera.x = casa4.x + 30
-            bandera.y = casa4.y + 10
+        elif bandera.jugador == p4 and casa4.getrect().colliderect(jugador.getrect()):
+            bandera.x, bandera.y = casa4.x + 30, casa4.y + 10
             bandera.jugador = casa4
             bandera.tiempo = time.time()
 
+        # 5. SUMAR PUNTOS Y RONDAS (Solo si eres tú en tu casa)
         if bandera.jugador in (casa1, casa2, casa3, casa4):
-            if bandera.jugador==jugador.casa:
+            # Comprobamos si la bandera está en la casa del jugador local
+            if bandera.jugador == p_local.casa:
                 if bandera.esperando is False:
                     bandera.tiempo = time.time()
-                    bandera.esperando=True
-                    print(puntuacion)
+                    bandera.esperando = True
+
                 if time.time() - bandera.tiempo >= 1:
-                    puntuacion[mi_id-1]+=4
-                    rondas[mi_id-1]+=1
+                    # SUMA CRÍTICA: Solo a tu posición en el array
+                    puntuacion[mi_id - 1] += 4
+                    rondas[mi_id - 1] += 1
+                    bandera.esperando = False
                     reiniciar()
                     contador()
-                    bandera.esperando=False
-
 
 def reiniciar():
     p1.x=25
