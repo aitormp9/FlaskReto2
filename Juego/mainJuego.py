@@ -88,31 +88,32 @@ def contador():#Funcion para contador
 
 def finPartida():
     global puntuacion, rondas, DuracionPartida, partida, idBBDD
-    # Comprobamos la lista completa de rondas que devuelve el servidor
+
+    # Comprobamos si ALGUIEN (i) ha llegado a 3 en la lista sincronizada
     for i in range(len(rondas)):
         if rondas[i] >= 3:
+            # Dibujamos el estado final para que todos lo vean antes de salir
             with lock:
                 screen.blit(fondo, (0, 0))
                 dibujar()
                 contador()
 
-                # Dibujar un cartel de victoria en pantalla
-                fuente_ganar = pygame.font.Font(None, 74)
-                texto = fuente_ganar.render(f"¡JUGADOR {i + 1} GANA!", True, (255, 255, 0))
-                screen.blit(texto, (450, 300))
+                # Cartel de victoria central
+                fuente_fin = pygame.font.Font(None, 80)
+                msg = f"¡GANADOR: JUGADOR {i + 1}!"
+                texto_surface = fuente_fin.render(msg, True, (255, 255, 0))
+                screen.blit(texto_surface, (400, 320))
 
             pygame.display.update()
 
-            # Solo el ganador envía los datos a Odoo para evitar duplicados
+            # LOGICA DE GUARDADO: Solo el que ha ganado guarda en SU Odoo
             if (i + 1) == mi_id:
-                print(f"Has ganado. Enviando estadísticas a Odoo...")
-                tiempo_final = int(time.time() - DuracionPartida)
-                duracion = f"{tiempo_final // 3600:02d}:{(tiempo_final % 3600) // 60:02d}:{tiempo_final % 60:02d}"
-                partida.save_game({idBBDD: puntuacion[mi_id - 1]}, duracion)
-            else:
-                print(f"El Jugador {i + 1} ha ganado. Fin de la partida.")
+                print("Victoria local. Guardando en Odoo...")
+                tiempo_total = int(time.time() - DuracionPartida)
+                duracion_str = f"{tiempo_total // 60:02d}:{tiempo_total % 60:02d}"
+                partida.save_game({idBBDD: puntuacion[mi_id - 1]}, duracion_str)
 
-            time.sleep(3)  # Pausa para ver el resultado
+            time.sleep(3)  # Pausa de 3 segundos para que todos vean el resultado
             pygame.quit()
             client.close()
             exit()
@@ -308,14 +309,14 @@ if sesion:
         state = envioPosicion(p_local.x, p_local.y)
 
         if state:
-            # 2. SINCRONIZACIÓN TOTAL
-            # Esto es lo que permite que veas cuando OTRO llega a 3
-            puntuacion = state['puntuacion']
-            rondas = state['rondas']
+            # SINCRONIZACIÓN CRÍTICA: Copiamos lo que dice el servidor para TODOS
+            # Esto permite que tu cliente "vea" que el Jugador 2 ha llegado a 3
+            puntuacion = list(state['puntuacion'])
+            rondas = list(state['rondas'])
 
+            # 2. DETECTAR PUNTO PARA REINICIAR
             if sum(state['rondas']) > sum(rondas_viejas):
                 reiniciar()
-
             rondas_viejas = list(state['rondas'])
 
             # 3. ACTUALIZAR POSICIONES DE OTROS
@@ -326,16 +327,6 @@ if sesion:
                     if 0 <= idx < len(jugadores):
                         jugadores[idx].x = pdata['x']
                         jugadores[idx].y = pdata['y']
-
-            # 4. ACTUALIZAR POSICIONES DE OTROS
-            for p_id_str, pdata in state['players'].items():
-                p_id = int(p_id_str)
-                if p_id != mi_id:
-                    indice = p_id - 1
-                    if 0 <= indice < len(jugadores):
-                        jugadores[indice].x = pdata['x']
-                        jugadores[indice].y = pdata['y']
-
         # 5. LÓGICA DE MOVIMIENTO Y DIBUJO
         with lock:
             dibujar()
