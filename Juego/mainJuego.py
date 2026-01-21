@@ -231,6 +231,7 @@ def reiniciar():
     bandera.x=640
     bandera.y=360
     bandera.jugador=None
+    bandera.esperando = False
 
 pygame.init()
 pygame.display.set_caption("Captura la bandera - Game Hub")
@@ -310,67 +311,64 @@ if sesion:
     rondas = [0,0,0,0]
 
     # BUCLE PRINCIPAL
+    # BUCLE PRINCIPAL
     while True:
-            screen.blit(fondo, (0, 0))
-            with lock:
-                dibujar()
-                contador()
-                estadobandera()
-            # 1. Movimiento del jugador
+        screen.blit(fondo, (0, 0))
+
+        # 1. ENVIAR Y RECIBIR (Solo una vez)
+        state = envioPosicion(p_local.x, p_local.y)
+
+        if state:
+            # 2. DETECTAR PUNTO PARA REINICIAR
+            # Comparamos lo que dice el server con nuestras rondas actuales locales
+            if sum(state['rondas']) > sum(rondas):
+                print("¡Alguien ha anotado! Reiniciando posiciones...")
+                reiniciar()
+
+            # 3. ACTUALIZAR MARCADORES (Puntos y Rondas)
+            for i in range(4):
+                if i != (mi_id - 1):  # Si no soy yo, acepto lo del servidor
+                    puntuacion[i] = state['puntuacion'][i]
+                    rondas[i] = state['rondas'][i]
+                else:
+                    # Si soy yo, el servidor ya tiene mis datos porque se los acabo de enviar
+                    # pero mantengo mis locales para no tener "lag" en mi marcador
+                    pass
+
+            # 4. ACTUALIZAR POSICIONES DE OTROS
+            for p_id, pdata in state['players'].items():
+                if p_id != mi_id:
+                    indice = p_id - 1
+                    if 0 <= indice < len(jugadores):
+                        jugadores[indice].x = pdata['x']
+                        jugadores[indice].y = pdata['y']
+
+        # 5. LÓGICA DE COLISIONES Y BANDERA
+        with lock:
+            dibujar()
+            contador()
+            # Mover p_local según teclas
             keys = pygame.key.get_pressed()
-            p_local.old_x, p_local.old_y = p_local.x, p_local.y  # Guardar para colisiones
+            p_local.old_x, p_local.old_y = p_local.x, p_local.y
             if keys[pygame.K_LEFT] or keys[pygame.K_a]: p_local.x -= velocidad
             if keys[pygame.K_RIGHT] or keys[pygame.K_d]: p_local.x += velocidad
             if keys[pygame.K_UP] or keys[pygame.K_w]: p_local.y -= velocidad
             if keys[pygame.K_DOWN] or keys[pygame.K_s]: p_local.y += velocidad
-            try:
-                colisiones(p_local)  # Comprobar colisiones antes de enviar
-            except:
-                print("Error con las colisiones")
-            try:
-                state = envioPosicion(p_local.x, p_local.y)
-            except:
-                print("Error con el envio de datos")
-            # --- Dentro del bucle principal del cliente ---
-            state = envioPosicion(p_local.x, p_local.y)
-            if state:
-                # --- AQUÍ VA EL REINICIAR PARA LOS DEMÁS ---
-                # Si la suma de rondas del servidor es mayor que la nuestra, alguien anotó
-                if sum(state['rondas']) > sum(rondas):
-                    reiniciar()
 
-                # Actualizamos las puntuaciones y rondas para verlas en el contador
-                for i in range(4):
-                    if i != (mi_id - 1):
-                        puntuacion[i] = state['puntuacion'][i]
-                        rondas[i] = state['rondas'][i]
+            colisiones(p_local)
+            estadobandera()
 
-                # Actualizar posiciones de los otros (esto ya lo tenías)
-                for p_id, pdata in state['players'].items():
-                    if p_id != mi_id:
-                        indice = p_id - 1
-                        if 0 <= indice < len(jugadores):
-                            jugadores[indice].x = pdata['x']
-                            jugadores[indice].y = pdata['y']
+        # 6. FINAL Y EVENTOS
+        try:
+            finPartida()
+        except Exception as e:
+            print(f"Error en finPartida: {e}")
 
-                # 2. Sincronizar puntos de los OTROS, pero mantener los MÍOS
-                for i in range(len(puntuacion)):
-                    if i != (mi_id - 1):  # Si no soy yo, actualizo con lo que dice el servidor
-                        puntuacion[i] = state['puntuacion'][i]
-                        rondas[i] = state['rondas'][i]
-                    else:
-                        # Si soy yo, el servidor se actualiza con mis datos locales
-                        # (No hacemos nada porque nuestra variable local ya es la correcta)
-                        pass
-            try:
-                finPartida()
-            except Exception as e:
-                print(f"Error detectado: {e}")
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    client.close()
-                    exit()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                client.close()
+                exit()
 
-            pygame.display.update()
-            clock.tick(60)
+        pygame.display.update()
+        clock.tick(60)
