@@ -32,24 +32,20 @@ sesion=False
 
 
 def envioPosicion(x, y):
-    global puntuacion, rondas  # Importante para actualizar las variables globales
+    global puntuacion, rondas
     try:
         paquete = {
             "x": x,
             "y": y,
-            "mi_puntuacion": puntuacion[mi_id - 1],  # Solo envío MIS puntos actuales
-            "mi_ronda": rondas[mi_id - 1]
+            "puntuacion": puntuacion[mi_id-1],
+            "rondas": rondas[mi_id-1],
+            # ENVIAMOS la posición de la bandera tal cual está en nuestro PC
+            "band_x": bandera.x,
+            "band_y": bandera.y
         }
         client.sendall(pickle.dumps(paquete))
-
         respuesta = client.recv(8192)
-        estado_global = pickle.loads(respuesta)
-
-        # Sincronizamos las listas locales con lo que dice el servidor
-        puntuacion = estado_global["puntuacion"]
-        rondas = estado_global["rondas"]
-
-        return estado_global
+        return pickle.loads(respuesta)
     except:
         return None
 def iniciosesion():#Funcion de iniciar sesion vinculado a Odoo
@@ -335,7 +331,14 @@ if sesion:
                 print("Error con el envio de datos")
             # --- Dentro del bucle principal del cliente ---
             state = envioPosicion(p_local.x, p_local.y)
+            state = envioPosicion(p_local.x, p_local.y)
+            if state:
+                # ... (lo que ya tienes de actualizar jugadores y puntos) ...
 
+                # Sincronizar bandera si NO la llevas tú
+                if bandera.jugador != p_local:
+                    bandera.x = state.get("band_x", 640)
+                    bandera.y = state.get("band_y", 360)
             if state:
                 # 1. Actualizar posiciones de los demás
                 for p_id, pdata in state['players'].items():

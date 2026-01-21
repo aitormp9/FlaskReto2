@@ -3,7 +3,7 @@ import threading
 import pickle
 
 # --- CONFIGURACIÓN ---
-HOST = '0.0.0.0'  # Escucha en todas las interfaces
+HOST = '0.0.0.0'
 PORT = 2000
 MAX_JUGADORES = 4
 
@@ -13,65 +13,63 @@ server.listen()
 
 # Estado global del juego
 game_state = {
-    "players": {},  # Diccionario para posiciones: {id: {"x": x, "y": y}}
-    "puntuacion": [0, 0, 0, 0],  # Puntos de los jugadores 1, 2, 3 y 4
-    "rondas": [0, 0, 0, 0]  # Rondas ganadas por cada uno
+    "players": {},
+    "puntuacion": [0, 0, 0, 0],
+    "rondas": [0, 0, 0, 0],
+    "band_x": 640,  # Posición inicial de la bandera
+    "band_y": 360
 }
 
-# Lock para evitar que dos hilos escriban al mismo tiempo y corrompan los datos
 state_lock = threading.Lock()
-
 
 def handle_client(conn, addr, player_id):
     print(f"[NUEVO] Jugador {player_id} conectado desde {addr}")
 
     try:
-        # 1. Enviamos el ID asignado al cliente nada más conectar
         conn.send(pickle.dumps(player_id))
 
         while True:
-            # 2. Recibimos datos del cliente (x, y, puntos, rondas)
-            data = conn.recv(8192)  # Buffer aumentado para evitar cortes
+            data = conn.recv(8192)
             if not data:
                 break
 
-            # --- Dentro del handle_client en el servidor ---
             datos_recibidos = pickle.loads(data)
 
             with state_lock:
-                # 1. Actualizar posición del jugador que envía
+                # 1. Actualizar posición del jugador
                 game_state["players"][player_id] = {
                     "x": datos_recibidos["x"],
                     "y": datos_recibidos["y"]
                 }
 
-                # 2. IMPORTANTE: Solo actualizamos la puntuación de ESTE jugador
-                # para no pisar lo que hayan sumado los demás
+                # 2. Sincronizar sus puntos y rondas
                 idx = player_id - 1
-                game_state["puntuacion"][idx] = datos_recibidos["mi_puntuacion"]
-                game_state["rondas"][idx] = datos_recibidos["mi_ronda"]
+                game_state["puntuacion"][idx] = datos_recibidos["puntuacion"]
+                game_state["rondas"][idx] = datos_recibidos["rondas"]
 
-                # 3. Enviamos el estado global (que contiene los puntos de TODOS)
+                # 3. NECESARIO: Actualizar posición de la bandera en el servidor
+                # Guardamos la posición que nos mande el cliente que la tenga
+                game_state["band_x"] = datos_recibidos.get("band_x", game_state["band_x"])
+                game_state["band_y"] = datos_recibidos.get("band_y", game_state["band_y"])
+
                 respuesta = pickle.dumps(game_state)
-                conn.sendall(respuesta)
+
+            conn.sendall(respuesta)
+
     except Exception as e:
         print(f"[ERROR] Jugador {player_id}: {e}")
     finally:
-        # Limpieza al desconectarse
         with state_lock:
             if player_id in game_state["players"]:
                 del game_state["players"][player_id]
         print(f"[DESCONECTADO] Jugador {player_id} ha salido.")
         conn.close()
 
-
 print(f"Servidor iniciado en {HOST}:{PORT}. Esperando jugadores...")
 
 while True:
     conn, addr = server.accept()
-
     with state_lock:
-        # Buscamos el primer ID libre entre 1 y 4
         nuevo_id = None
         for i in range(1, MAX_JUGADORES + 1):
             if i not in game_state["players"]:
@@ -79,12 +77,9 @@ while True:
                 break
 
     if nuevo_id:
-        # Reservamos el ID temporalmente para que no se asigne a otro mientras arranca el hilo
         with state_lock:
             game_state["players"][nuevo_id] = {"x": 0, "y": 0}
-
         thread = threading.Thread(target=handle_client, args=(conn, addr, nuevo_id))
         thread.start()
     else:
-        print(f"Conexión rechazada para {addr}: Sala llena.")
         conn.close()
