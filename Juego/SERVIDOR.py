@@ -37,25 +37,21 @@ def handle_client(conn, addr, player_id):
 
             datos_recibidos = pickle.loads(data)
 
-            # 3. Actualizamos el estado global de forma segura
             with state_lock:
-                # Actualizar posición del jugador que envía
+                # 1. Actualizar posición (Como ya hacías)
                 game_state["players"][player_id] = {
                     "x": datos_recibidos["x"],
                     "y": datos_recibidos["y"]
                 }
 
-                # Sincronizar sus puntos y rondas en las listas globales
+                # 2. Actualizar puntos y rondas en la LISTA GLOBAL del servidor
                 idx = player_id - 1
-                game_state["puntuacion"][idx] = datos_recibidos["puntuacion"]
-                game_state["rondas"][idx] = datos_recibidos["rondas"]
+                game_state["puntuacion"][idx] = datos_recibidos["mi_puntuacion"]
+                game_state["rondas"][idx] = datos_recibidos["mi_ronda"]
 
-                # 4. Preparamos la respuesta con TODO el estado actualizado
+                # 3. Enviar todo el paquete de vuelta
                 respuesta = pickle.dumps(game_state)
-
-            # 5. Enviamos la actualización a este cliente
-            conn.sendall(respuesta)
-
+                conn.sendall(respuesta)
     except Exception as e:
         print(f"[ERROR] Jugador {player_id}: {e}")
     finally:

@@ -32,22 +32,26 @@ sesion=False
 
 
 def envioPosicion(x, y):
+    global puntuacion, rondas  # Importante para actualizar las variables globales
     try:
-        # Creamos el paquete con TODA la información local
         paquete = {
             "x": x,
             "y": y,
-            "puntuacion": puntuacion[mi_id - 1],  # Envía tu puntuación actual
-            "rondas": rondas[mi_id - 1]  # Envía tu ronda actual
+            "mi_puntuacion": puntuacion[mi_id - 1],  # Solo envío MIS puntos actuales
+            "mi_ronda": rondas[mi_id - 1]
         }
         client.sendall(pickle.dumps(paquete))
 
-        # Recibimos el estado completo del servidor
         respuesta = client.recv(8192)
-        return pickle.loads(respuesta)
+        estado_global = pickle.loads(respuesta)
+
+        # Sincronizamos las listas locales con lo que dice el servidor
+        puntuacion = estado_global["puntuacion"]
+        rondas = estado_global["rondas"]
+
+        return estado_global
     except:
         return None
-
 def iniciosesion():#Funcion de iniciar sesion vinculado a Odoo
     global sesion,idBBDD,partida
     email=input("Ingresa tu email: ")
