@@ -35,21 +35,23 @@ def handle_client(conn, addr, player_id):
             if not data:
                 break
 
+            # --- Dentro del handle_client en el servidor ---
             datos_recibidos = pickle.loads(data)
 
             with state_lock:
-                # 1. Actualizar posición (Como ya hacías)
+                # 1. Actualizar posición del jugador que envía
                 game_state["players"][player_id] = {
                     "x": datos_recibidos["x"],
                     "y": datos_recibidos["y"]
                 }
 
-                # 2. Actualizar puntos y rondas en la LISTA GLOBAL del servidor
+                # 2. IMPORTANTE: Solo actualizamos la puntuación de ESTE jugador
+                # para no pisar lo que hayan sumado los demás
                 idx = player_id - 1
                 game_state["puntuacion"][idx] = datos_recibidos["mi_puntuacion"]
                 game_state["rondas"][idx] = datos_recibidos["mi_ronda"]
 
-                # 3. Enviar todo el paquete de vuelta
+                # 3. Enviamos el estado global (que contiene los puntos de TODOS)
                 respuesta = pickle.dumps(game_state)
                 conn.sendall(respuesta)
     except Exception as e:

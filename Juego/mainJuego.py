@@ -325,13 +325,27 @@ if sesion:
                 state = envioPosicion(p_local.x, p_local.y)
             except:
                 print("Error con el envio de datos")
-            if state and 'players' in state:
+            # --- Dentro del bucle principal del cliente ---
+            state = envioPosicion(p_local.x, p_local.y)
+
+            if state:
+                # 1. Actualizar posiciones de los demás
                 for p_id, pdata in state['players'].items():
                     if p_id != mi_id:
                         indice = p_id - 1
                         if 0 <= indice < len(jugadores):
                             jugadores[indice].x = pdata['x']
                             jugadores[indice].y = pdata['y']
+
+                # 2. Sincronizar puntos de los OTROS, pero mantener los MÍOS
+                for i in range(len(puntuacion)):
+                    if i != (mi_id - 1):  # Si no soy yo, actualizo con lo que dice el servidor
+                        puntuacion[i] = state['puntuacion'][i]
+                        rondas[i] = state['rondas'][i]
+                    else:
+                        # Si soy yo, el servidor se actualiza con mis datos locales
+                        # (No hacemos nada porque nuestra variable local ya es la correcta)
+                        pass
             try:
                 finPartida()
             except Exception as e:
