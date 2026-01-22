@@ -97,7 +97,7 @@ def finPartida():#Verificacion de final de partida y envio de datos
                 envioPosicion(p_local.x, p_local.y)
             pygame.display.update()
             time.sleep(1)
-            print(rondas[i])
+            #print(rondas[i])
             print(f"El Jugador {i+1} ha ganado la partida")
             tiempo = int(time.time() - DuracionPartida)
 
