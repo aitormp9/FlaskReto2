@@ -1,6 +1,7 @@
 import socket
 import threading
 import pickle
+import time
 
 # --- CONFIGURACIÓN ---
 HOST = '0.0.0.0'  # Escucha en todas las interfaces
@@ -17,11 +18,31 @@ game_state = {
     "puntuacion": [0, 0, 0, 0],  # Puntos de los jugadores 1, 2, 3 y 4
     "rondas": [0, 0, 0, 0]  # Rondas ganadas por cada uno
 }
+conexiones={}
 
 # Lock para evitar que dos hilos escriban al mismo tiempo y corrompan los datos
 state_lock = threading.Lock()
 
 
+def monitor_puntuaciones():
+    """Hilo que imprime el estado de la partida constantemente"""
+    while True:
+        print("\n--- ESTADO DE LA PARTIDA ---")
+        with state_lock:
+            for i in range(MAX_JUGADORES):
+                p_id = i + 1
+                conectado = "CONECTADO" if p_id in game_state["players"] else "---"
+                puntos = game_state["puntuacion"][i]
+                rondas = game_state["rondas"][i]
+                print(f"Jugador {p_id} ({conectado}): {puntos} Pts | {rondas} Rondas")
+        print("----------------------------")
+
+        time.sleep(2)  # Actualiza cada 2 segundos para no saturar la CPU
+
+
+# --- INICIAR EL MONITOR ---
+thread_monitor = threading.Thread(target=monitor_puntuaciones, daemon=True)
+thread_monitor.start()
 def handle_client(conn, addr, player_id):
     print(f"[NUEVO] Jugador {player_id} conectado desde {addr}")
 
@@ -69,7 +90,6 @@ print(f"Servidor iniciado en {HOST}:{PORT}. Esperando jugadores...")
 
 while True:
     conn, addr = server.accept()
-
     with state_lock:
         # Buscamos el primer ID libre entre 1 y 4
         nuevo_id = None
@@ -82,7 +102,7 @@ while True:
         # Reservamos el ID temporalmente para que no se asigne a otro mientras arranca el hilo
         with state_lock:
             game_state["players"][nuevo_id] = {"x": 0, "y": 0}
-
+            conexiones[nuevo_id]=conn
         thread = threading.Thread(target=handle_client, args=(conn, addr, nuevo_id))
         thread.start()
     else:

@@ -84,36 +84,30 @@ def contador():#Funcion para contador
             rect.topleft = posiciones[i]
 
         screen.blit(texto_surface, rect)
-
-
-def finPartida():
-    global puntuacion, rondas, DuracionPartida, partida, idBBDD
-
-    # Comprobamos si ALGUIEN (i) ha llegado a 3 en la lista sincronizada
-    for i in range(len(rondas)):
-        if rondas[i] >= 3:
-            # Dibujamos el estado final para que todos lo vean antes de salir
+def finPartida():#Verificacion de final de partida y envio de datos
+    global puntuacion,DuracionPartida,partida,idBBDD
+    for i in range(len(puntuacion)):
+        if rondas[i]==3:
             with lock:
-                screen.blit(fondo, (0, 0))
+                envioPosicion(p_local.x, p_local.y)
+                screen.blit(fondo,(0,0))
                 dibujar()
                 contador()
-
-                # Cartel de victoria central
-                fuente_fin = pygame.font.Font(None, 80)
-                msg = f"¡GANADOR: JUGADOR {i + 1}!"
-                texto_surface = fuente_fin.render(msg, True, (255, 255, 0))
-                screen.blit(texto_surface, (400, 320))
-
+            for _ in range(3):  # Lo intentamos un par de veces por seguridad
+                envioPosicion(p_local.x, p_local.y)
             pygame.display.update()
+            time.sleep(1)
+            print(rondas[i])
+            print(f"El Jugador {i+1} ha ganado la partida")
+            tiempo = int(time.time() - DuracionPartida)
 
-            # LOGICA DE GUARDADO: Solo el que ha ganado guarda en SU Odoo
-            if (i + 1) == mi_id:
-                print("Victoria local. Guardando en Odoo...")
-                tiempo_total = int(time.time() - DuracionPartida)
-                duracion_str = f"{tiempo_total // 60:02d}:{tiempo_total % 60:02d}"
-                partida.save_game({idBBDD: puntuacion[mi_id - 1]}, duracion_str)
+            horas = tiempo // 3600
+            minutos = (tiempo % 3600) // 60
+            segundos = tiempo % 60
 
-            time.sleep(3)  # Pausa de 3 segundos para que todos vean el resultado
+            duracion = f"{horas:02d}:{minutos:02d}:{segundos:02d}"
+            print(duracion)
+            #partida.save_game({idBBDD: puntuacion[mi_id-1]},duracion)
             pygame.quit()
             client.close()
             exit()
@@ -223,138 +217,149 @@ def reiniciar():
 
 pygame.init()
 pygame.display.set_caption("Captura la bandera - Game Hub")
-iniciosesion()
-if sesion:
-    pygame.init()
-    fuente_contador = pygame.font.Font(None, 32)
-    screen = pygame.display.set_mode((1280, 720))
-    imagen=pygame.image.load('imagen/fondo.jpg').convert_alpha()
-    fondo=pygame.transform.scale(imagen,(1280,720))
-    clock = pygame.time.Clock()
-    #Creacion de casas y jugadores
-    casa1=casa(screen,0,0)
-    p1=jugador(screen,25,35,casa1,'imagen/p1.png')
-    casa2=casa(screen,1210,0)
-    p2=jugador(screen,1232,35,casa2,'imagen/p2.png')
-    casa3=casa(screen,0,650)
-    p3=jugador(screen,25,685,casa3,'imagen/p3.png')
-    casa4=casa(screen,1210,650)
-    p4=jugador(screen,1230,685,casa4,'imagen/p4.png')
-    inicio = time.time();
-    #ZONA 1 (Arriba-Izquierda) | Rango X: 100-540, Y: 100-260
-    muro11 = muro(screen, 150, 100, 150, 30)  # Barra horizontal superior
-    muro12 = muro(screen, 400, 100, 30, 120)  # Barra vertical derecha
-    muro13 = muro(screen, 150, 200, 100, 30)  # Barra horizontal inferior
-    muro14 = muro(screen, 300, 160, 40, 40)  # Bloque central
+#iniciosesion()
+#if sesion:
+pygame.init()
+fuente_contador = pygame.font.Font(None, 32)
+screen = pygame.display.set_mode((1280, 720))
+imagen=pygame.image.load('imagen/fondo.jpg').convert_alpha()
+fondo=pygame.transform.scale(imagen,(1280,720))
+clock = pygame.time.Clock()
+#Creacion de casas y jugadores
+casa1=casa(screen,0,0)
+p1=jugador(screen,25,35,casa1,'imagen/p1.png')
+casa2=casa(screen,1210,0)
+p2=jugador(screen,1232,35,casa2,'imagen/p2.png')
+casa3=casa(screen,0,650)
+p3=jugador(screen,25,685,casa3,'imagen/p3.png')
+casa4=casa(screen,1210,650)
+p4=jugador(screen,1230,685,casa4,'imagen/p4.png')
+inicio = time.time();
+#ZONA 1 (Arriba-Izquierda) | Rango X: 100-540, Y: 100-260
+muro11 = muro(screen, 150, 100, 150, 30)  # Barra horizontal superior
+muro12 = muro(screen, 400, 100, 30, 120)  # Barra vertical derecha
+muro13 = muro(screen, 150, 200, 100, 30)  # Barra horizontal inferior
+muro14 = muro(screen, 300, 160, 40, 40)  # Bloque central
 
-    #ZONA 2 (Arriba-Derecha) | Rango X: 740-1180, Y: 100-260
-    muro21 = muro(screen, 940, 100, 150, 30)
-    muro22 = muro(screen, 800, 100, 30, 120)
-    muro23 = muro(screen, 940, 200, 100, 30)
-    muro24 = muro(screen, 880, 160, 40, 40)
+#ZONA 2 (Arriba-Derecha) | Rango X: 740-1180, Y: 100-260
+muro21 = muro(screen, 940, 100, 150, 30)
+muro22 = muro(screen, 800, 100, 30, 120)
+muro23 = muro(screen, 940, 200, 100, 30)
+muro24 = muro(screen, 880, 160, 40, 40)
 
-    #ZONA 3 (Abajo-Izquierda) | Rango X: 100-540, Y: 460-620
-    muro31 = muro(screen, 150, 590, 150, 30)
-    muro32 = muro(screen, 400, 460, 30, 120)
-    muro33 = muro(screen, 150, 460, 100, 30)
-    muro34 = muro(screen, 300, 520, 40, 40)
+#ZONA 3 (Abajo-Izquierda) | Rango X: 100-540, Y: 460-620
+muro31 = muro(screen, 150, 590, 150, 30)
+muro32 = muro(screen, 400, 460, 30, 120)
+muro33 = muro(screen, 150, 460, 100, 30)
+muro34 = muro(screen, 300, 520, 40, 40)
 
-    #ZONA 4 (Abajo-Derecha) | Rango X: 740-1180, Y: 460-620
-    muro41 = muro(screen, 940, 590, 150, 30)
-    muro42 = muro(screen, 800, 460, 30, 120)
-    muro43 = muro(screen, 940, 460, 100, 30)
-    muro44 = muro(screen, 880, 520, 40, 40)
-    bandera=bandera(screen)
-    muros=[]
-    casas=[]
-    jugadores=[]
-    jugadores.append(p1)
-    jugadores.append(p2)
-    jugadores.append(p3)
-    jugadores.append(p4)
-    muros.append(muro11)
-    muros.append(muro12)
-    muros.append(muro13)
-    muros.append(muro14)
-    muros.append(muro21)
-    muros.append(muro22)
-    muros.append(muro23)
-    muros.append(muro24)
-    muros.append(muro31)
-    muros.append(muro32)
-    muros.append(muro33)
-    muros.append(muro34)
-    muros.append(muro41)
-    muros.append(muro42)
-    muros.append(muro43)
-    muros.append(muro44)
-    casas.append(casa1)
-    casas.append(casa2)
-    casas.append(casa3)
-    casas.append(casa4)
-    velocidad=2;
-    pillado=False
-    p_local = jugadores[mi_id-1]
-    puntuacion=[0,0,0,0]
-    rondas = [0,0,0,0]
+#ZONA 4 (Abajo-Derecha) | Rango X: 740-1180, Y: 460-620
+muro41 = muro(screen, 940, 590, 150, 30)
+muro42 = muro(screen, 800, 460, 30, 120)
+muro43 = muro(screen, 940, 460, 100, 30)
+muro44 = muro(screen, 880, 520, 40, 40)
+bandera=bandera(screen)
+muros=[]
+casas=[]
+jugadores=[]
+jugadores.append(p1)
+jugadores.append(p2)
+jugadores.append(p3)
+jugadores.append(p4)
+muros.append(muro11)
+muros.append(muro12)
+muros.append(muro13)
+muros.append(muro14)
+muros.append(muro21)
+muros.append(muro22)
+muros.append(muro23)
+muros.append(muro24)
+muros.append(muro31)
+muros.append(muro32)
+muros.append(muro33)
+muros.append(muro34)
+muros.append(muro41)
+muros.append(muro42)
+muros.append(muro43)
+muros.append(muro44)
+casas.append(casa1)
+casas.append(casa2)
+casas.append(casa3)
+casas.append(casa4)
+velocidad=2;
+pillado=False
+p_local = jugadores[mi_id-1]
+puntuacion=[0,0,0,0]
+rondas = [0,0,0,0]
 
-    # BUCLE PRINCIPAL
-    rondas_viejas = [0, 0, 0, 0]
+# BUCLE PRINCIPAL
+rondas_viejas = [0, 0, 0, 0]
 
-    # BUCLE PRINCIPAL
-    while True:
-        screen.blit(fondo, (0, 0))
+# BUCLE PRINCIPAL
+while True:
+    screen.blit(fondo, (0, 0))
 
-        # 1. ENVIAR Y RECIBIR DATOS
-        state = envioPosicion(p_local.x, p_local.y)
+    # 1. ENVIAR Y RECIBIR DATOS
+    state = envioPosicion(p_local.x, p_local.y)
 
-        if state:
-            # SINCRONIZACIÓN CRÍTICA: Copiamos lo que dice el servidor para TODOS
-            # Esto permite que tu cliente "vea" que el Jugador 2 ha llegado a 3
-            puntuacion = list(state['puntuacion'])
-            rondas = list(state['rondas'])
+    if state:
+        # 2. DETECTAR PUNTO (Tu nueva lógica de revisión)
+        # Comparamos la suma total de rondas del servidor con nuestra suma local antigua
+        if sum(state['rondas']) > sum(rondas_viejas):
+            #print("Punto detectado")
+            reiniciar()
 
-            # 2. DETECTAR PUNTO PARA REINICIAR
-            if sum(state['rondas']) > sum(rondas_viejas):
-                reiniciar()
-            rondas_viejas = list(state['rondas'])
+        # 3. ACTUALIZAR LOS DATOS LOCALES
+        # Guardamos lo que tenemos ahora como "viejo" para la siguiente vuelta
+        rondas_viejas = list(state['rondas'])
 
-            # 3. ACTUALIZAR POSICIONES DE OTROS
-            for p_id_str, pdata in state['players'].items():
-                p_id = int(p_id_str)
-                if p_id != mi_id:
-                    idx = p_id - 1
-                    if 0 <= idx < len(jugadores):
-                        jugadores[idx].x = pdata['x']
-                        jugadores[idx].y = pdata['y']
-        # 5. LÓGICA DE MOVIMIENTO Y DIBUJO
-        with lock:
-            dibujar()
-            contador()
+        # Sincronizamos puntuaciones para el contador
+        for i in range(4):
+            if i != (mi_id - 1):  # Si no soy yo, mando lo del servidor
+                puntuacion[i] = state['puntuacion'][i]
+                rondas[i] = state['rondas'][i]
+            else:
+                # Si soy yo, mis variables locales mandan para evitar lag
+                # pero actualizamos rondas_viejas para que no se reinicie infinitamente
+                rondas_viejas[i] = rondas[i]
 
-            keys = pygame.key.get_pressed()
-            p_local.old_x, p_local.old_y = p_local.x, p_local.y
-            if keys[pygame.K_LEFT] or keys[pygame.K_a]: p_local.x -= velocidad
-            if keys[pygame.K_RIGHT] or keys[pygame.K_d]: p_local.x += velocidad
-            if keys[pygame.K_UP] or keys[pygame.K_w]: p_local.y -= velocidad
-            if keys[pygame.K_DOWN] or keys[pygame.K_s]: p_local.y += velocidad
+        # 4. ACTUALIZAR POSICIONES DE OTROS
+        for p_id_str, pdata in state['players'].items():
+            p_id = int(p_id_str)
+            if p_id != mi_id:
+                indice = p_id - 1
+                if 0 <= indice < len(jugadores):
+                    jugadores[indice].x = pdata['x']
+                    jugadores[indice].y = pdata['y']
 
-            colisiones(p_local)
-            estadobandera()
+    # 5. LÓGICA DE MOVIMIENTO Y DIBUJO
+    with lock:
+        dibujar()
+        contador()
 
-        # 6. VERIFICAR FINAL
-        try:
-            finPartida()
-        except Exception as e:
-            # Silenciamos errores menores de fin de partida para no cerrar el juego
-            pass
+        keys = pygame.key.get_pressed()
+        p_local.old_x, p_local.old_y = p_local.x, p_local.y
+        if keys[pygame.K_LEFT] or keys[pygame.K_a]: p_local.x -= velocidad
+        if keys[pygame.K_RIGHT] or keys[pygame.K_d]: p_local.x += velocidad
+        if keys[pygame.K_UP] or keys[pygame.K_w]: p_local.y -= velocidad
+        if keys[pygame.K_DOWN] or keys[pygame.K_s]: p_local.y += velocidad
 
-        # 7. EVENTOS
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                client.close()
-                exit()
+        colisiones(p_local)
+        estadobandera()
 
-        pygame.display.update()
-        clock.tick(60)
+    # 6. VERIFICAR FINAL
+    try:
+        finPartida()
+    except Exception as e:
+        # Silenciamos errores menores de fin de partida para no cerrar el juego
+        pass
+
+    # 7. EVENTOS
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            client.close()
+            exit()
+
+    pygame.display.update()
+    clock.tick(60)
