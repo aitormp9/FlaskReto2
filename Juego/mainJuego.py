@@ -8,39 +8,35 @@ from casa import casa
 from muro import muro
 from bandera import bandera
 from gamerequests.jugador import GameClient
+
 # --- CONFIGURACIÓN RED ---
 HOST = '192.168.25.46'
 PORT = 2000
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect((HOST, PORT))
 mi_id = pickle.loads(client.recv(4096))
-color=None
-if mi_id==1:
-    color="Rojo"
-if mi_id==2:
-    color="Azul"
-if mi_id==3:
-    color="verde"
-if mi_id==4:
-    color="Naranja"
+color={1:"Rojo",2:"Azul",3:"Verde",4:"Naranja"}
 
-print(f"Color del Jugador: {color}")
+print(f"Color del Jugador: {color[mi_id]}")
 idBBDD=0
 DuracionPartida = time.time()
 lock=threading.Lock()
 partida = GameClient()
 sesion=False
-
-
+tiempo=0
+puntuacion=[0,0,0,0]
+rondas=[0,0,0,0]
 def envioPosicion(x, y):
-    global puntuacion, rondas  # Importante para actualizar las variables globales
+    global puntuacion, rondas,tiempo,bandera  # Importante para actualizar las variables globales
     try:
         paquete = {
             "x": x,
             "y": y,
             "mi_puntuacion": puntuacion[mi_id - 1],  # Solo envío MIS puntos actuales
-            "mi_ronda": rondas[mi_id - 1]
+            "mi_ronda": rondas[mi_id - 1],
+            "bandera":bandera.jugador
         }
+        print(bandera.jugador)
         client.sendall(pickle.dumps(paquete))
 
         respuesta = client.recv(8192)
@@ -49,10 +45,11 @@ def envioPosicion(x, y):
         # Sincronizamos las listas locales con lo que dice el servidor
         puntuacion = estado_global["puntuacion"]
         rondas = estado_global["rondas"]
-
+        tiempo=estado_global["tiempo"]
         return estado_global
     except:
         return None
+
 def iniciosesion():#Funcion de iniciar sesion vinculado a Odoo
     global sesion,idBBDD,partida
     email=input("Ingresa tu email: ")
@@ -65,55 +62,59 @@ def iniciosesion():#Funcion de iniciar sesion vinculado a Odoo
         sesion=True
         #print(sesion)
 
-def contador():#Funcion para contador
+def contador():
+    global tiempo
+    tiempo_segundos = int(time.time() - tiempo)
+    horas = tiempo_segundos // 3600
+    minutos = (tiempo_segundos % 3600) // 60
+    segundos = tiempo_segundos % 60
+    texto_tiempo = f"{horas:02d}:{minutos:02d}:{segundos:02d}"
+
     posiciones = [
-        (60, 20),  # Jugador 1 (Arriba Izquierda)
-        (1220, 20),  # Jugador 2 (Arriba Derecha)
-        (60, 680),  # Jugador 3 (Abajo Izquierda)
-        (1220, 680)  # Jugador 4 (Abajo Derecha)
+        (60, 20),    # P1
+        (1220, 20),  # P2
+        (60, 680),   # P3
+        (1220, 680), # P4
+        (640, 680)   # CRONÓMETRO (Centro abajo)
     ]
 
+    # 2. Dibujar el Cronómetro (Usa el índice 4)
+    surf_tiempo = fuente_contador.render(texto_tiempo, True, (255, 255, 255))
+    rect_tiempo = surf_tiempo.get_rect(midbottom=posiciones[4])
+    screen.blit(surf_tiempo, rect_tiempo)
+
+    # 3. Dibujar las rondas de los jugadores
     for i in range(len(rondas)):
-        texto = f"{rondas[i]}"
-        texto_surface = fuente_contador.render(texto, True, (255,255,255))
+        texto_ronda = f"{rondas[i]}"
+        surf_ronda = fuente_contador.render(texto_ronda, True, (255, 255, 255))
+        rect_ronda = surf_ronda.get_rect()
 
-        rect = texto_surface.get_rect()
+        # Alineación dinámica (Derecha o Izquierda)
         if posiciones[i][0] > 640:
-            rect.topright = posiciones[i]
+            rect_ronda.topright = posiciones[i]
         else:
-            rect.topleft = posiciones[i]
+            rect_ronda.topleft = posiciones[i]
 
-        screen.blit(texto_surface, rect)
+        screen.blit(surf_ronda, rect_ronda)
 
 
 def finPartida():
-    global puntuacion, rondas, DuracionPartida, partida, idBBDD
-
-    # Comprobamos si ALGUIEN (i) ha llegado a 3 en la lista sincronizada
+    global rondas, puntuacion, tiempo, partida, idBBDD
     for i in range(len(rondas)):
         if rondas[i] >= 3:
-            # Dibujamos el estado final para que todos lo vean antes de salir
-            with lock:
-                screen.blit(fondo, (0, 0))
-                dibujar()
-                contador()
-
-                # Cartel de victoria central
-                fuente_fin = pygame.font.Font(None, 80)
-                msg = f"¡GANADOR: JUGADOR {i + 1}!"
-                texto_surface = fuente_fin.render(msg, True, (255, 255, 0))
-                screen.blit(texto_surface, (400, 320))
-
+            envioPosicion(p_local.x, p_local.y)
+            screen.blit(fondo, (0, 0))
+            dibujar()
+            contador()
             pygame.display.update()
-
-            # LOGICA DE GUARDADO: Solo el que ha ganado guarda en SU Odoo
-            if (i + 1) == mi_id:
-                print("Victoria local. Guardando en Odoo...")
-                tiempo_total = int(time.time() - DuracionPartida)
-                duracion_str = f"{tiempo_total // 60:02d}:{tiempo_total % 60:02d}"
-                partida.save_game({idBBDD: puntuacion[mi_id - 1]}, duracion_str)
-
-            time.sleep(3)  # Pausa de 3 segundos para que todos vean el resultado
+            vencedor_id = i + 1
+            nombre_color = color[vencedor_id]
+            print(f"¡El Jugador {nombre_color} ha ganado!")
+            if vencedor_id == mi_id:
+                tiempos = int(time.time() - tiempo)
+                duracion = f"{tiempos // 3600:02d}:{(tiempos % 3600) // 60:02d}:{tiempos % 60:02d}"
+                partida.save_game({idBBDD: puntuacion[mi_id - 1]}, duracion)
+            time.sleep(2)
             pygame.quit()
             client.close()
             exit()
@@ -176,12 +177,12 @@ def estadobandera():
 
         # 2. TOMAR DEL SUELO
         if bandera.jugador == None and jugador.getrect().colliderect(bandera.getrect()):
-            bandera.jugador = jugador
+            bandera.jugador = jugador.nombre
             if jugador == p_local:
                 puntuacion[mi_id - 1] += 1
 
         # 3. TRANSPORTAR
-        if bandera.jugador == jugador:
+        if bandera.jugador == jugador.nombre:
             bandera.x = jugador.x + 20
             bandera.y = jugador.y
 
@@ -233,13 +234,13 @@ if sesion:
     clock = pygame.time.Clock()
     #Creacion de casas y jugadores
     casa1=casa(screen,0,0)
-    p1=jugador(screen,25,35,casa1,'imagen/p1.png')
+    p1=jugador(screen,25,35,casa1,'imagen/p1.png',"Jugador1")
     casa2=casa(screen,1210,0)
-    p2=jugador(screen,1232,35,casa2,'imagen/p2.png')
+    p2=jugador(screen,1232,35,casa2,'imagen/p2.png',"Jugador2")
     casa3=casa(screen,0,650)
-    p3=jugador(screen,25,685,casa3,'imagen/p3.png')
+    p3=jugador(screen,25,685,casa3,'imagen/p3.png',"Jugador3")
     casa4=casa(screen,1210,650)
-    p4=jugador(screen,1230,685,casa4,'imagen/p4.png')
+    p4=jugador(screen,1230,685,casa4,'imagen/p4.png',"Jugador4")
     inicio = time.time();
     #ZONA 1 (Arriba-Izquierda) | Rango X: 100-540, Y: 100-260
     muro11 = muro(screen, 150, 100, 150, 30)  # Barra horizontal superior
@@ -292,7 +293,7 @@ if sesion:
     casas.append(casa2)
     casas.append(casa3)
     casas.append(casa4)
-    velocidad=2;
+    velocidad=4;
     pillado=False
     p_local = jugadores[mi_id-1]
     puntuacion=[0,0,0,0]
@@ -303,6 +304,7 @@ if sesion:
 
     # BUCLE PRINCIPAL
     while True:
+
         screen.blit(fondo, (0, 0))
 
         # 1. ENVIAR Y RECIBIR DATOS

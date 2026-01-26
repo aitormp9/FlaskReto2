@@ -1,7 +1,7 @@
 import pygame
 
 class jugador:
-    def __init__(self,screen,x,y,casa,imagen):
+    def __init__(self,screen,x,y,casa,imagen,nombre):
         #self.nombre=nombre
         self.screen=screen
         self.altura=20
@@ -10,6 +10,7 @@ class jugador:
         self.x=x
         self.y=y
         self.casa=casa
+        self.nombre=nombre
         self.xinicio=x
         self.yinicio=y
         self.imagennombre=pygame.image.load(imagen).convert_alpha()
