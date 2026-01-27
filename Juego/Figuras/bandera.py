@@ -1,7 +1,7 @@
 import pygame
 
 class bandera:
-    def __init__(self,screen):
+    def __init__(self,screen,imagen):
         self.x=640
         self.y=360
         self.ancho=20
@@ -11,7 +11,7 @@ class bandera:
         self.jugador=None
         self.tiempo=0
         self.esperando=False
-        self.image = pygame.image.load("imagen/ikurrina2.png").convert_alpha()
+        self.image = pygame.image.load(imagen).convert_alpha()
         self.imagen = pygame.transform.scale(self.image, (self.ancho , self.alto ))
     def draw(self):
         #pygame.draw.rect(self.screen,self.color,(self.x,self.y,self.ancho,self.alto))

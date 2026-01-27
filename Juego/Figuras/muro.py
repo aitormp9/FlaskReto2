@@ -2,9 +2,9 @@ import pygame
 import random
 
 class muro:
-    def __init__(self, screen, x, y,ancho ,alto):
+    def __init__(self, screen, x, y,ancho ,alto,imagen):
         self.screen = screen
-        self.imagen = pygame.image.load("imagen/muro3.jpg")
+        self.imagen = pygame.image.load(imagen)
         self.ancho = ancho
         self.alto = alto
         self.imagen = pygame.transform.scale(self.imagen, (self.ancho, self.alto))

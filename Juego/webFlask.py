@@ -12,7 +12,6 @@ urlApi = "http://3.233.57.10:8080/api/v1"
 
 
 def obtener_estado_del_server():
-    """Esta función es el 'espía' que va al server y trae los datos"""
     try:
         # 1. Conectamos al servidor de juego
         cliente_flask = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

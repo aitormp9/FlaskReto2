@@ -3,10 +3,10 @@ import time
 import socket
 import pickle
 import threading
-from jugador import jugador
-from casa import casa
-from muro import muro
-from bandera import bandera
+from Juego.Figuras.jugador import jugador
+from Juego.Figuras.casa import casa
+from Juego.Figuras.muro import muro
+from Juego.Figuras.bandera import bandera
 from gamerequests.jugador import GameClient
 
 # --- CONFIGURACIÓN RED ---
@@ -68,7 +68,7 @@ def iniciosesion():#Funcion de iniciar sesion vinculado a Odoo
 
 def contador():#Contador y marcadores que se muestran en pantalla
     global tiempo
-    tiempo_segundos = int(time.time() - tiempo)
+    tiempo_segundos = int(tiempo)
     horas = tiempo_segundos // 3600
     minutos = (tiempo_segundos % 3600) // 60
     segundos = tiempo_segundos % 60
@@ -79,7 +79,7 @@ def contador():#Contador y marcadores que se muestran en pantalla
         (1220, 20),  # P2
         (60, 680),   # P3
         (1220, 680), # P4
-        (640, 680)   # CRONÓMETRO (Centro abajo)
+        (640, 680)   # CRONÓMETRO
     ]
 
     # 2. Dibujar el Cronómetro (Usa el índice 4)
@@ -245,39 +245,39 @@ if sesion:
     fondo=pygame.transform.scale(imagen,(1280,720))
     clock = pygame.time.Clock()
     #Creacion de casas y jugadores
-    casa1=casa(screen,0,0)
+    casa1=casa(screen,0,0,"imagen/cabañapaja.png")
     p1=jugador(screen,25,35,casa1,'imagen/p1.png',"Jugador1")
-    casa2=casa(screen,1210,0)
+    casa2=casa(screen,1210,0,"imagen/cabañapaja.png")
     p2=jugador(screen,1232,35,casa2,'imagen/p2.png',"Jugador2")
-    casa3=casa(screen,0,650)
+    casa3=casa(screen,0,650,"imagen/cabañapaja.png")
     p3=jugador(screen,25,685,casa3,'imagen/p3.png',"Jugador3")
-    casa4=casa(screen,1210,650)
+    casa4=casa(screen,1210,650,"imagen/cabañapaja.png")
     p4=jugador(screen,1230,685,casa4,'imagen/p4.png',"Jugador4")
     inicio = time.time();
     #ZONA 1 (Arriba-Izquierda) | Rango X: 100-540, Y: 100-260
-    muro11 = muro(screen, 150, 100, 150, 30)  # Barra horizontal superior
-    muro12 = muro(screen, 400, 100, 30, 120)  # Barra vertical derecha
-    muro13 = muro(screen, 150, 200, 100, 30)  # Barra horizontal inferior
-    muro14 = muro(screen, 300, 160, 40, 40)  # Bloque central
+    muro11 = muro(screen, 150, 100, 150, 30,"imagen/muro3.jpg")  # Barra horizontal superior
+    muro12 = muro(screen, 400, 100, 30, 120,"imagen/muro3.jpg")  # Barra vertical derecha
+    muro13 = muro(screen, 150, 200, 100, 30,"imagen/muro3.jpg")  # Barra horizontal inferior
+    muro14 = muro(screen, 300, 160, 40, 40,"imagen/muro3.jpg")  # Bloque central
 
     #ZONA 2 (Arriba-Derecha) | Rango X: 740-1180, Y: 100-260
-    muro21 = muro(screen, 940, 100, 150, 30)
-    muro22 = muro(screen, 800, 100, 30, 120)
-    muro23 = muro(screen, 940, 200, 100, 30)
-    muro24 = muro(screen, 880, 160, 40, 40)
+    muro21 = muro(screen, 940, 100, 150, 30,"imagen/muro3.jpg")
+    muro22 = muro(screen, 800, 100, 30, 120,"imagen/muro3.jpg")
+    muro23 = muro(screen, 940, 200, 100, 30,"imagen/muro3.jpg")
+    muro24 = muro(screen, 880, 160, 40, 40,"imagen/muro3.jpg")
 
     #ZONA 3 (Abajo-Izquierda) | Rango X: 100-540, Y: 460-620
-    muro31 = muro(screen, 150, 590, 150, 30)
-    muro32 = muro(screen, 400, 460, 30, 120)
-    muro33 = muro(screen, 150, 460, 100, 30)
-    muro34 = muro(screen, 300, 520, 40, 40)
+    muro31 = muro(screen, 150, 590, 150, 30,"imagen/muro3.jpg")
+    muro32 = muro(screen, 400, 460, 30, 120,"imagen/muro3.jpg")
+    muro33 = muro(screen, 150, 460, 100, 30,"imagen/muro3.jpg")
+    muro34 = muro(screen, 300, 520, 40, 40,"imagen/muro3.jpg")
 
     #ZONA 4 (Abajo-Derecha) | Rango X: 740-1180, Y: 460-620
-    muro41 = muro(screen, 940, 590, 150, 30)
-    muro42 = muro(screen, 800, 460, 30, 120)
-    muro43 = muro(screen, 940, 460, 100, 30)
-    muro44 = muro(screen, 880, 520, 40, 40)
-    bandera=bandera(screen)
+    muro41 = muro(screen, 940, 590, 150, 30,"imagen/muro3.jpg")
+    muro42 = muro(screen, 800, 460, 30, 120,"imagen/muro3.jpg")
+    muro43 = muro(screen, 940, 460, 100, 30,"imagen/muro3.jpg")
+    muro44 = muro(screen, 880, 520, 40, 40,"imagen/muro3.jpg")
+    bandera=bandera(screen,"imagen/ikurrina2.png")
     muros=[muro11,muro12,muro13,muro14,muro21,muro22,muro23,muro24,muro31,muro32,muro33,muro34,muro41,muro42,muro43,muro44]
     casas=[casa1,casa2,casa3,casa4]
     jugadores=[p1,p2,p3,p4]
