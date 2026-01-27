@@ -26,7 +26,9 @@ sesion=False
 tiempo=0
 puntuacion=[0,0,0,0]
 rondas=[0,0,0,0]
-def envioPosicion(x, y):
+conexion=None
+
+def envioPosicion(x, y):#La informacion que gestionamos con los sockets
     global puntuacion, rondas,tiempo,bandera  # Importante para actualizar las variables globales
     try:
         paquete = {
@@ -34,9 +36,10 @@ def envioPosicion(x, y):
             "y": y,
             "mi_puntuacion": puntuacion[mi_id - 1],  # Solo envío MIS puntos actuales
             "mi_ronda": rondas[mi_id - 1],
-            "bandera":bandera.jugador
+            "bandera":bandera.jugador,
+            "conexion":conexion
         }
-        print(bandera.jugador)
+        #print(bandera.jugador)
         client.sendall(pickle.dumps(paquete))
 
         respuesta = client.recv(8192)
@@ -51,18 +54,19 @@ def envioPosicion(x, y):
         return None
 
 def iniciosesion():#Funcion de iniciar sesion vinculado a Odoo
-    global sesion,idBBDD,partida
+    global sesion,idBBDD,partida,conexion
     email=input("Ingresa tu email: ")
     j = partida.login(email)
     if "error" in j:
        print(j["message"])
     else:
         #print(+j["id"]) #id del jugador en la bbdd
+        conexion=email
         idBBDD=j["id"]
         sesion=True
         #print(sesion)
 
-def contador():
+def contador():#Contador y marcadores que se muestran en pantalla
     global tiempo
     tiempo_segundos = int(time.time() - tiempo)
     horas = tiempo_segundos // 3600
@@ -98,7 +102,7 @@ def contador():
         screen.blit(surf_ronda, rect_ronda)
 
 
-def finPartida():
+def finPartida():#Gestion final de la partida
     global rondas, puntuacion, tiempo, partida, idBBDD
     for i in range(len(rondas)):
         if rondas[i] >= 3:
@@ -144,9 +148,9 @@ def dibujar():#Funcion para dibujar todos los objetos
     p2.draw()
     p3.draw()
     p4.draw()
-    bandera.draw()#
+    bandera.draw()
 
-def colisiones(player):#Todas las colisiones excepto la bandera
+def colisiones(player):#Control de todas las colisiones excepto la bandera
     if player.x < 0:
         player.x = 0
     if player.x + player.anchura > 1280:
@@ -162,7 +166,7 @@ def colisiones(player):#Todas las colisiones excepto la bandera
             player.x, player.y = player.old_x, player.old_y
 
 
-def estadobandera():
+def estadobandera():#Todo lo relacionado con la bandera se gestiona aqui
     global rondas, puntuacion
 
     for jugador in jugadores:
@@ -216,7 +220,7 @@ def estadobandera():
                 bandera.esperando = False
                 break
 
-def reiniciar():
+def reiniciar():#Situa cada objeto como al inicio de la partida
     p1.x=25
     p1.y=35
     p2.x=1232
@@ -274,34 +278,10 @@ if sesion:
     muro43 = muro(screen, 940, 460, 100, 30)
     muro44 = muro(screen, 880, 520, 40, 40)
     bandera=bandera(screen)
-    muros=[]
-    casas=[]
-    jugadores=[]
-    jugadores.append(p1)
-    jugadores.append(p2)
-    jugadores.append(p3)
-    jugadores.append(p4)
-    muros.append(muro11)
-    muros.append(muro12)
-    muros.append(muro13)
-    muros.append(muro14)
-    muros.append(muro21)
-    muros.append(muro22)
-    muros.append(muro23)
-    muros.append(muro24)
-    muros.append(muro31)
-    muros.append(muro32)
-    muros.append(muro33)
-    muros.append(muro34)
-    muros.append(muro41)
-    muros.append(muro42)
-    muros.append(muro43)
-    muros.append(muro44)
-    casas.append(casa1)
-    casas.append(casa2)
-    casas.append(casa3)
-    casas.append(casa4)
-    velocidad=2;
+    muros=[muro11,muro12,muro13,muro14,muro21,muro22,muro23,muro24,muro31,muro32,muro33,muro34,muro41,muro42,muro43,muro44]
+    casas=[casa1,casa2,casa3,casa4]
+    jugadores=[p1,p2,p3,p4]
+    velocidad=4;
     pillado=False
     p_local = jugadores[mi_id-1]
     puntuacion=[0,0,0,0]
@@ -356,7 +336,6 @@ if sesion:
         try:
             finPartida()
         except Exception as e:
-            # Silenciamos errores menores de fin de partida para no cerrar el juego
             pass
 
         # 7. EVENTOS
