@@ -114,24 +114,32 @@ def handle_client(conn, addr, player_id):
                     inicio_partida = time.time()  # REINICIAR CRONÓMETRO
 
         conn.close()
-
-
-def monitor():
-    """Hilo simple para ver qué pasa en consola"""
+def monitor_puntuaciones():
     while True:
+        print("\n--- ESTADO DE LA PARTIDA ---")
         with lock:
-            t = int(time.time() - inicio_partida)
-            print(f"\n--- T: {t}s | Jugadores: {len(game_state['players'])} ---")
-            print(f"Puntuación: {game_state['puntuacion']}")
+            for i in range(MAX_JUGADORES):
+                p_id = i + 1
+                conectado = "CONECTADO" if p_id in game_state["players"] else "---"
+                puntos = game_state["puntuacion"][i]
+                rondas = game_state["rondas"][i]
+                print(f"Jugador {p_id} ({conectado}): {puntos} Pts | {rondas} Rondas")
+            print("Bandera", game_state["bandera"])
+            print("Conexion", game_state["conexiones"])
+        print("----------------------------")
+
         time.sleep(5)
+
+# --- INICIAR EL MONITOR ---
+thread_monitor = threading.Thread(target=monitor_puntuaciones, daemon=True)
+thread_monitor.start()
+
+
 
 
 # --- ARRANQUE ---
 if __name__ == '__main__':
     print(f"--- SERVER CORRIENDO EN {HOST}:{PORT} ---")
-
-    # Iniciamos el monitor en segundo plano
-    threading.Thread(target=monitor, daemon=True).start()
 
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind((HOST, PORT))
@@ -140,12 +148,9 @@ if __name__ == '__main__':
     while True:
         conn, addr = server.accept()
 
-        # Asignar ID
         with lock:
-            # Busca el primer hueco libre (1, 2, 3 o 4)
             nuevo_id = next((i for i in range(1, 5) if i not in game_state["players"]), None)
 
-        # Si está lleno (None), usamos 99 temporalmente para que Flask pueda entrar
         if nuevo_id is None:
             nuevo_id = 99
 
