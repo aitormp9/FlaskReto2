@@ -48,15 +48,11 @@ def handle_client(conn, addr, player_id):
             except:
                 break
 
-            # --- DETECTOR DE FLASK ---
-            # Si recibimos el mensaje especial "API_REQUEST", devolvemos todo y cerramos
             if datos_recibidos == "API_REQUEST":
                 es_flask = True
                 with lock:
-                    # Actualizamos tiempo antes de enviar
-                    game_state["tiempo"] = time.time() - inicio
                     conn.sendall(pickle.dumps(game_state))
-                break  # Rompemos el bucle para desconectar a Flask inmediatamente
+                break
 
             # --- LÓGICA DE JUGADOR NORMAL ---
             with lock:
@@ -96,7 +92,7 @@ def handle_client(conn, addr, player_id):
         print(f"[ERROR] {e}")
 
     finally:
-        # Solo borramos al jugador si NO es Flask
+        #Borramos jugador
         if not es_flask:
             with lock:
                 if player_id in game_state["players"]:
