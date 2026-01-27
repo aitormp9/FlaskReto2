@@ -167,11 +167,19 @@ def estadobandera():
 
     for jugador in jugadores:
         # 1. ROBO DE LA BANDERA
-        if bandera.jugador and bandera.jugador != jugador and bandera.jugador not in casas:
+        # ERROR ESTABA AQUI: bandera.jugador != jugador
+        # CORRECCION: bandera.jugador != jugador.nombre
+        if bandera.jugador and bandera.jugador != jugador.nombre and bandera.jugador not in casas:
+
+            # Verificamos colisión
             if jugador.getrect().colliderect(bandera.getrect()):
+                # Si alguien toca al portador, el portador vuelve al inicio
                 for pillado in jugadores:
-                    if pillado is bandera.jugador:
+                    # Aquí también debemos comparar nombres para encontrar al portador
+                    if pillado.nombre == bandera.jugador:
                         pillado.x, pillado.y = pillado.xinicio, pillado.yinicio
+
+                # Resetear bandera
                 bandera.x, bandera.y = 640, 360
                 bandera.jugador = None
 
@@ -293,7 +301,7 @@ if sesion:
     casas.append(casa2)
     casas.append(casa3)
     casas.append(casa4)
-    velocidad=4;
+    velocidad=2;
     pillado=False
     p_local = jugadores[mi_id-1]
     puntuacion=[0,0,0,0]

@@ -21,12 +21,12 @@ game_state = {
 }
 
 state_lock = threading.Lock()
+# --- FLASK ---
 urlApi = "http://3.233.57.10:8080/api/v1"
 
 app = Flask(__name__)  # Flask buscará automáticamente la carpeta 'templates'
 
 
-# --- RUTAS DE FLASK ---
 
 @app.route('/')
 def inicio():
@@ -75,7 +75,7 @@ def estadoBandera():
         return render_template('estadoBandera.html', estado=estado_actual_bandera, jugador=game_state["bandera"])
 
 
-# --- LÓGICA DE SOCKETS ---
+# --- SERVIDOR ---
 
 def handle_client(conn, addr, player_id):
     global game_state
