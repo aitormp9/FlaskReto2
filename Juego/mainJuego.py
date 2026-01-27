@@ -264,7 +264,7 @@ if sesion:
     muro21 = muro(screen, 940, 100, 150, 30,"imagen/muro3.jpg")
     muro22 = muro(screen, 800, 100, 30, 120,"imagen/muro3.jpg")
     muro23 = muro(screen, 940, 200, 100, 30,"imagen/muro3.jpg")
-    muro24 = muro(screen, 880, 160, 40, 40,"imagen/muro3.jpg")
+    muro24 = muro(screen, 875, 160, 40, 40,"imagen/muro3.jpg")
 
     #ZONA 3 (Abajo-Izquierda) | Rango X: 100-540, Y: 460-620
     muro31 = muro(screen, 150, 590, 150, 30,"imagen/muro3.jpg")
