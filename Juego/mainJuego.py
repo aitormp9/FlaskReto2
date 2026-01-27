@@ -3,10 +3,10 @@ import time
 import socket
 import pickle
 import threading
-from Juego.Figuras.jugador import jugador
-from Juego.Figuras.casa import casa
-from Juego.Figuras.muro import muro
-from Juego.Figuras.bandera import bandera
+from Figuras.jugador import jugador
+from Figuras.casa import casa
+from Figuras.muro import muro
+from Figuras.bandera import bandera
 from gamerequests.jugador import GameClient
 
 # --- CONFIGURACIÓN RED ---
