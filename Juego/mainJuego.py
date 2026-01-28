@@ -15,9 +15,7 @@ PORT = 2000
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect((HOST, PORT))
 mi_id = pickle.loads(client.recv(4096))
-color={1:"Rojo",2:"Azul",3:"Verde",4:"Naranja"}
 
-print(f"Color del Jugador: {color[mi_id]}")
 idBBDD=0
 DuracionPartida = time.time()
 lock=threading.Lock()
@@ -27,7 +25,7 @@ tiempo=0
 puntuacion=[0,0,0,0]
 rondas=[0,0,0,0]
 conexion=None
-
+idBBDD=None
 def envioPosicion(x, y):#La informacion que gestionamos con los sockets
     global puntuacion, rondas,tiempo,bandera  # Importante para actualizar las variables globales
     try:
@@ -37,7 +35,8 @@ def envioPosicion(x, y):#La informacion que gestionamos con los sockets
             "mi_puntuacion": puntuacion[mi_id - 1],  # Solo envío MIS puntos actuales
             "mi_ronda": rondas[mi_id - 1],
             "bandera":bandera.jugador,
-            "conexion":conexion
+            "conexion":conexion,
+            "idBBDD":idBBDD,
         }
         #print(bandera.jugador)
         client.sendall(pickle.dumps(paquete))
@@ -51,20 +50,23 @@ def envioPosicion(x, y):#La informacion que gestionamos con los sockets
         tiempo=estado_global["tiempo"]
         return estado_global
     except:
+        print("Error con los datos")
         return None
 
 def iniciosesion():#Funcion de iniciar sesion vinculado a Odoo
     global sesion,idBBDD,partida,conexion
-    email=input("Ingresa tu email: ")
-    j = partida.login(email)
-    if "error" in j:
-       print(j["message"])
-    else:
-        #print(+j["id"]) #id del jugador en la bbdd
-        conexion=email
-        idBBDD=j["id"]
-        sesion=True
-        #print(sesion)
+    while True:
+        email=input("Ingresa tu email: ")
+        j = partida.login(email)
+        if "error" in j:
+           print(j["message"])
+        else:
+            #print(+j["id"]) #id del jugador en la bbdd
+            conexion=email
+            idBBDD=j["id"]
+            sesion=True
+            break
+            #print(sesion)
 
 def contador():#Contador y marcadores que se muestran en pantalla
     global tiempo
@@ -114,11 +116,8 @@ def finPartida():#Gestion final de la partida
             vencedor_id = i + 1
             nombre_color = color[vencedor_id]
             print(f"¡El Jugador {nombre_color} ha ganado!")
-            if vencedor_id == mi_id:
-                tiempos = int(time.time() - tiempo)
-                duracion = f"{tiempos // 3600:02d}:{(tiempos % 3600) // 60:02d}:{tiempos % 60:02d}"
-                partida.save_game({idBBDD: puntuacion[mi_id - 1]}, duracion)
-            time.sleep(2)
+            #if vencedor_id == mi_id:
+            time.sleep(1)
             pygame.quit()
             client.close()
             exit()
@@ -211,7 +210,7 @@ def estadobandera():#Todo lo relacionado con la bandera se gestiona aqui
                 bandera.tiempo = time.time()
                 bandera.esperando = True
 
-            if time.time() - bandera.tiempo >= 2:
+            if time.time() - bandera.tiempo >= 1:
                 if jugador == p_local:
                     puntuacion[mi_id - 1] += 4
                     rondas[mi_id - 1] += 1
@@ -235,7 +234,11 @@ def reiniciar():#Situa cada objeto como al inicio de la partida
     bandera.esperando = False
 
 pygame.init()
+color={1:"Rojo",2:"Azul",3:"Verde",4:"Naranja"}
+print(f"Jugador: {color[mi_id]}")
 pygame.display.set_caption("Captura la bandera - Game Hub")
+icono = pygame.image.load("imagen/icono3.png")
+pygame.display.set_icon(icono)
 iniciosesion()
 if sesion:
     pygame.init()
@@ -253,7 +256,7 @@ if sesion:
     p3=jugador(screen,25,685,casa3,'imagen/p3.png',"Jugador3")
     casa4=casa(screen,1210,650,"imagen/cabañapaja.png")
     p4=jugador(screen,1230,685,casa4,'imagen/p4.png',"Jugador4")
-    inicio = time.time();
+    inicio = time.time()
     #ZONA 1 (Arriba-Izquierda) | Rango X: 100-540, Y: 100-260
     muro11 = muro(screen, 150, 100, 150, 30,"imagen/muro3.jpg")  # Barra horizontal superior
     muro12 = muro(screen, 400, 100, 30, 120,"imagen/muro3.jpg")  # Barra vertical derecha
@@ -281,7 +284,7 @@ if sesion:
     muros=[muro11,muro12,muro13,muro14,muro21,muro22,muro23,muro24,muro31,muro32,muro33,muro34,muro41,muro42,muro43,muro44]
     casas=[casa1,casa2,casa3,casa4]
     jugadores=[p1,p2,p3,p4]
-    velocidad=4;
+    velocidad=4
     pillado=False
     p_local = jugadores[mi_id-1]
     puntuacion=[0,0,0,0]

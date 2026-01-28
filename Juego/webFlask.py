@@ -5,7 +5,6 @@ import requests
 
 app = Flask(__name__)
 
-# Configuración de dónde está el servidor de juego (mismo PC = localhost)
 GAME_SERVER_IP = '127.0.0.1'
 GAME_SERVER_PORT = 2000
 urlApi = "http://3.233.57.10:8080/api/v1"
@@ -16,12 +15,8 @@ def obtener_estado_del_server():
         # 1. Conectamos al servidor de juego
         cliente_flask = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         cliente_flask.connect((GAME_SERVER_IP, GAME_SERVER_PORT))
-
-        # 2. El servidor nos manda un ID nada más conectar (protocolo actual)
-        # Lo recibimos pero lo ignoramos porque somos Flask, no un jugador
         _ = cliente_flask.recv(4096)
-
-        # 3. Enviamos la clave secreta para pedir datos
+        # 3. Enviamos la clave para que el socket sepa que es para flask
         cliente_flask.send(pickle.dumps("API_REQUEST"))
 
         # 4. Recibimos el estado completo del juego
@@ -32,16 +27,6 @@ def obtener_estado_del_server():
         return estado
     except Exception as e:
         print(f"Error conectando al juego: {e}")
-        # Retornamos un estado vacío de seguridad para que la web no se caiga
-        return {
-            "estado": "OFFLINE",
-            "players": {},
-            "puntuacion": [0, 0, 0, 0],
-            "rondas": [0, 0, 0, 0],
-            "conexiones": [],
-            "bandera": None,
-            "tiempo": 0
-        }
 
 
 @app.route('/')

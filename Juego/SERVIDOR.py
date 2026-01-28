@@ -2,17 +2,17 @@ import socket
 import threading
 import pickle
 import time
-
+from gamerequests.jugador import GameClient
 # --- CONFIGURACIÓN ---
 HOST = '0.0.0.0'
 PORT = 2000
 MAX_JUGADORES = 4
 
-# Variable para controlar cuándo empieza el cronómetro
 inicio_partida = time.time()
 tiempo=time.time()-inicio_partida
-
-# Estado global
+idBBDD=[]
+partida = GameClient()
+# Estado del juego
 game_state = {
     "players": {},
     "puntuacion": [0, 0, 0, 0],
@@ -20,13 +20,23 @@ game_state = {
     "bandera": None,
     "estado": "sin empezar",
     "conexiones": [],
-    "tiempo": tiempo
+    "tiempo": tiempo,
 }
 
 lock = threading.Lock()
+def finalizar():
+    global idBBDD, tiempo, game_state
+    if 3 in game_state["rondas"]:
+        for i in range(idBBDD):
+            tiempos = int(time.time() - tiempo)
+            duracion = f"{tiempos // 3600:02d}:{(tiempos % 3600) // 60:02d}:{tiempos % 60:02d}"
+            try:
+                partida.save_game({idBBDD[i]: game_state["puntuacion"][i]}, duracion)
+            except:
+                print("Error al enviar partida")
+                return
 
-
-def handle_client(conn, addr, player_id):
+def gestionDatos(conn, addr, player_id):
     global game_state, inicio_partida
 
     # 1. Enviar ID al conectar
@@ -55,34 +65,40 @@ def handle_client(conn, addr, player_id):
                     # ACTUALIZAMOS EL TIEMPO AQUÍ PARA FLASK
                     game_state["tiempo"] = time.time() - inicio_partida
                     conn.sendall(pickle.dumps(game_state))
+                    if player_id in game_state["players"]:
+                        del game_state["players"][player_id]
                 break  # Flask recibe y se va (desconecta)
 
             # --- CASO B: ES UN JUGADOR ---
             with lock:
                 # 1. Gestionar Email
-                if isinstance(datos, dict) and "conexion" in datos:
-                    mi_email = datos["conexion"]
-                    if mi_email and mi_email not in game_state["conexiones"]:
-                        game_state["conexiones"].append(mi_email)
-
-                # 2. Actualizar Posiciones y Puntos
                 if isinstance(datos, dict):
-                    # Actualizar Bandera
+
+                    # 1. Sacamos el Email
+                    if "conexion" in datos:
+                        mi_email = datos["conexion"]
+                        # Verificamos email y que no esté repetido
+                        if mi_email and mi_email not in game_state["conexiones"]:
+                            game_state["conexiones"].append(mi_email)
+
+                    # 2. Sacamos la informacion de la bandera
                     if "bandera" in datos:
                         game_state["bandera"] = datos["bandera"]
+                    if "idBBDD" in datos:
+                        idBBDD.append(datos["idBBDD"])
 
-                    # Actualizar Jugador
+                    # Actualizar posisciones del Jugador
                     game_state["players"][player_id] = {
                         "x": datos.get("x", 0),
                         "y": datos.get("y", 0)
                     }
 
-                    # Actualizar Puntuación
+                    # Actualizar Puntuación de la partida
                     idx = player_id - 1
                     game_state["puntuacion"][idx] = datos.get("mi_puntuacion", 0)
                     game_state["rondas"][idx] = datos.get("mi_ronda", 0)
 
-                    # Verificar Estado
+                    # Control de  Estado de la partida
                     if 3 in game_state["puntuacion"]:
                         game_state["estado"] = "Terminada"
                     else:
@@ -133,7 +149,8 @@ def monitor_puntuaciones():
 # --- INICIAR EL MONITOR ---
 thread_monitor = threading.Thread(target=monitor_puntuaciones, daemon=True)
 thread_monitor.start()
-
+thread_monitor = threading.Thread(target=finalizar(), daemon=True)
+thread_monitor.start()
 
 
 
@@ -151,7 +168,13 @@ if __name__ == '__main__':
         with lock:
             nuevo_id = next((i for i in range(1, 5) if i not in game_state["players"]), None)
 
-        if nuevo_id is None:
+        if nuevo_id is not None:
+            # Creamos una entrada vacía para que el siguiente jugador vea que está ocupado
+            # Pongo coordenadas fuera de pantalla (-1000) para que no se vea un "fantasma"
+            # mientras carga
+            game_state["players"][nuevo_id] = {"x": -1000, "y": -1000}
+        else:
+            # Si está lleno o es Flask extra
             nuevo_id = 99
 
-        threading.Thread(target=handle_client, args=(conn, addr, nuevo_id)).start()
+        threading.Thread(target=gestionDatos, args=(conn, addr, nuevo_id)).start()

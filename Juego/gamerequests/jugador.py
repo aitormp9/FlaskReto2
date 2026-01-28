@@ -9,9 +9,13 @@ class GameClient:
     def save_game(self, players:dict[int,int],duration:int):
         for id,score in players.items():
             data = {
-                "jugadorId":id,
-                "duracion":duration,
-                "score":score
+                "jugadores":[
+                    {
+                        "id":players[0],
+                        "score": score
+                    }
+                ],
+                        "duracion": duration,
             }
             requests.post(f"{self.api_url}/partidas",json = data)
  
