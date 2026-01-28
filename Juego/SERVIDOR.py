@@ -26,12 +26,12 @@ game_state = {
 lock = threading.Lock()
 def finalizar():
     global idBBDD, tiempo, game_state
+    print(idBBDD)
     if 3 in game_state["rondas"]:
-        for i in range(idBBDD):
             tiempos = int(time.time() - tiempo)
             duracion = f"{tiempos // 3600:02d}:{(tiempos % 3600) // 60:02d}:{tiempos % 60:02d}"
             try:
-                partida.save_game({idBBDD[i]: game_state["puntuacion"][i]}, duracion)
+                partida.save_game({idBBDD: game_state["puntuacion"]}, duracion)
             except:
                 print("Error al enviar partida")
                 return

@@ -7,17 +7,15 @@ class GameClient:
 
     #Guardar el resumen de la partida
     def save_game(self, players:dict[int,int],duration:int):
-        for id,score in players.items():
-            data = {
-                "jugadores":[
-                    {
-                        "id":players[0],
-                        "score": score
-                    }
-                ],
-                        "duracion": duration,
-            }
-            requests.post(f"{self.api_url}/partidas",json = data)
+        listajugadores=[]
+        for i in range(players[0]):
+            jugador={"id":players[0][i],"score":players[1][i]}
+            listajugadores.append(jugador)
+        data = {
+            "jugadores":listajugadores,
+            "duracion": duration,
+        }
+        requests.post(f"{self.api_url}/partidas",json = data)
  
     #Inicia sesión con el email
     def login(self, email:str):
