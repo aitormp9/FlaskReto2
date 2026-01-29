@@ -333,8 +333,8 @@ if sesion:
                         jugadores[idx].y = pdata['y']
         # 5. LÓGICA DE MOVIMIENTO Y DIBUJO
         with lock:
-            dibujar()
             contador()
+            dibujar()
 
             keys = pygame.key.get_pressed()
             p_local.old_x, p_local.old_y = p_local.x, p_local.y

@@ -71,6 +71,6 @@ def estadoBandera():
     return render_template('estadoBandera.html', estado=estado, jugador=data["bandera"])
 
 
-if __name__ == '__main__':
+def iniciarFlask():
     print("Iniciando Servidor WEB en puerto 5000...")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000,use_reloader=False)

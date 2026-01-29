@@ -3,6 +3,7 @@ import threading
 import pickle
 import time
 from gamerequests.jugador import GameClient
+from webFlask import iniciarFlask
 # --- CONFIGURACIÓN ---
 HOST = '0.0.0.0'
 PORT = 2000
@@ -148,14 +149,6 @@ def monitor_puntuaciones():
 
         time.sleep(5)
 
-# --- INICIAR EL MONITOR ---
-thread_monitor = threading.Thread(target=monitor_puntuaciones, daemon=True)
-thread_monitor.start()
-thread_monitor = threading.Thread(target=finalizar(), daemon=True)
-thread_monitor.start()
-
-
-
 # --- ARRANQUE ---
 if __name__ == '__main__':
     print(f"--- SERVER CORRIENDO EN {HOST}:{PORT} ---")
@@ -163,7 +156,15 @@ if __name__ == '__main__':
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind((HOST, PORT))
     server.listen()
+    thread_monitor = threading.Thread(target=monitor_puntuaciones, daemon=True)
+    thread_monitor.start()
 
+    thread_finalizar = threading.Thread(target=finalizar, daemon=True)
+    thread_finalizar.start()
+
+
+    thread_flask = threading.Thread(target=iniciarFlask, daemon=True)
+    thread_flask.start()
     while True:
         conn, addr = server.accept()
 
@@ -171,12 +172,8 @@ if __name__ == '__main__':
             nuevo_id = next((i for i in range(1, 5) if i not in game_state["players"]), None)
 
         if nuevo_id is not None:
-            # Creamos una entrada vacía para que el siguiente jugador vea que está ocupado
-            # Pongo coordenadas fuera de pantalla (-1000) para que no se vea un "fantasma"
-            # mientras carga
             game_state["players"][nuevo_id] = {"x": -1000, "y": -1000}
         else:
-            # Si está lleno o es Flask extra
             nuevo_id = 99
 
         threading.Thread(target=gestionDatos, args=(conn, addr, nuevo_id)).start()
