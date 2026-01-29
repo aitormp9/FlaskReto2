@@ -26,6 +26,7 @@ puntuacion=[0,0,0,0]
 rondas=[0,0,0,0]
 conexion=None
 idBBDD=None
+pantallainicio=True
 def envioPosicion(x, y):#La informacion que gestionamos con los sockets
     global puntuacion, rondas,tiempo,bandera  # Importante para actualizar las variables globales
     try:
@@ -35,8 +36,9 @@ def envioPosicion(x, y):#La informacion que gestionamos con los sockets
             "mi_puntuacion": puntuacion[mi_id - 1],  # Solo envío MIS puntos actuales
             "mi_ronda": rondas[mi_id - 1],
             "bandera":bandera.jugador,
-            "conexion":conexion,
             "idBBDD":idBBDD,
+            "conexion": conexion,
+            "iniciotiempo": 1,
         }
         #print(bandera.jugador)
         client.sendall(pickle.dumps(paquete))
@@ -292,7 +294,16 @@ if sesion:
 
     # BUCLE PRINCIPAL
     rondas_viejas = [0, 0, 0, 0]
-
+    if pantallainicio==True:
+        imagen1 = pygame.image.load('imagen/Pantalladecarga1.png').convert_alpha()
+        fondo1 = pygame.transform.scale(imagen1, (1280, 720))
+        screen.blit(fondo1, (0, 0))
+        pygame.display.update()
+        tiempo_espera = time.time()
+        while time.time() - tiempo_espera < 3:
+            pygame.event.pump()
+            pantallainicio = False
+    envioPosicion(p_local.x, p_local.y)
     # BUCLE PRINCIPAL
     while True:
 

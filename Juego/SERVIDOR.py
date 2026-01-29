@@ -8,8 +8,7 @@ HOST = '0.0.0.0'
 PORT = 2000
 MAX_JUGADORES = 4
 
-inicio_partida = time.time()
-tiempo=time.time()-inicio_partida
+inicio_partida = 0
 idBBDD=[]
 partida = GameClient()
 # Estado del juego
@@ -20,7 +19,7 @@ game_state = {
     "bandera": None,
     "estado": "sin empezar",
     "conexiones": [],
-    "tiempo": tiempo,
+    "tiempo": 0,
 }
 
 lock = threading.Lock()
@@ -37,7 +36,7 @@ def finalizar():
                 return
 
 def gestionDatos(conn, addr, player_id):
-    global game_state, inicio_partida
+    global game_state, inicio_partida, tiempo
 
     # 1. Enviar ID al conectar
     try:
@@ -103,9 +102,12 @@ def gestionDatos(conn, addr, player_id):
                         game_state["estado"] = "Terminada"
                     else:
                         game_state["estado"] = "Jugándose"
-
-                # 3. ACTUALIZAR TIEMPO ANTES DE RESPONDER AL JUGADOR
-                game_state["tiempo"] = time.time() - inicio_partida
+                    if datos.get("iniciotiempo") == 1:
+                        if inicio_partida == 0:
+                            print("--- TEMPORIZADOR INICIADO ---")
+                            inicio_partida = time.time()
+                        elif inicio_partida !=0:
+                            game_state["tiempo"]=time.time()-inicio_partida
 
                 # Enviar estado actualizado
                 conn.sendall(pickle.dumps(game_state))
