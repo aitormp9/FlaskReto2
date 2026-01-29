@@ -152,19 +152,27 @@ def monitor_puntuaciones():
 # --- ARRANQUE ---
 if __name__ == '__main__':
     print(f"--- SERVER CORRIENDO EN {HOST}:{PORT} ---")
-
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind((HOST, PORT))
-    server.listen()
-    thread_monitor = threading.Thread(target=monitor_puntuaciones, daemon=True)
-    thread_monitor.start()
-
-    thread_finalizar = threading.Thread(target=finalizar, daemon=True)
-    thread_finalizar.start()
-
-
-    thread_flask = threading.Thread(target=iniciarFlask, daemon=True)
-    thread_flask.start()
+    try:
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind((HOST, PORT))
+        server.listen()
+    except :
+        print(f"[ERROR] {HOST}:{PORT} no se pudo conectar")
+    try:
+        thread_monitor = threading.Thread(target=monitor_puntuaciones, daemon=True)
+        thread_monitor.start()
+    except :
+        print("[ERROR] No se pudo monitorear")
+    try:
+        thread_finalizar = threading.Thread(target=finalizar, daemon=True)
+        thread_finalizar.start()
+    except :
+        print("[ERROR] al cargar final")
+    try:
+        thread_flask = threading.Thread(target=iniciarFlask, daemon=True)
+        thread_flask.start()
+    except :
+        print("[ERROR] No se pudo conectar a Flask")
     while True:
         conn, addr = server.accept()
 
