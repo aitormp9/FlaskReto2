@@ -175,7 +175,7 @@ def estadobandera():#Todo lo relacionado con la bandera se gestiona aqui
         if bandera.jugador and bandera.jugador != jugador.nombre and bandera.jugador not in casas:
 
             # Verificamos colisión
-            if jugador.getrect().colliderect(bandera.getrect() or jugador.gerrect() for jugador in jugadores):
+            if jugador.getrect().colliderect(bandera.getrect()):
                 # Si alguien toca al portador, el portador vuelve al inicio
                 for pillado in jugadores:
                     # Aquí también debemos comparar nombres para encontrar al portador

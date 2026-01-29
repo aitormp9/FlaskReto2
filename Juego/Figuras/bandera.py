@@ -17,6 +17,6 @@ class bandera:
         #pygame.draw.rect(self.screen,self.color,(self.x,self.y,self.ancho,self.alto))
         self.screen.blit(self.imagen, (self.x, self.y))
     def getrect(self):
-        return pygame.Rect(self.x,self.y,self.ancho,self.alto)
+        return pygame.Rect(self.x-20,self.y,self.ancho+20,self.alto)
     def getestado(self):
         return self.jugador
