@@ -6,11 +6,7 @@ class GameClient:
         self.api_url = "http://3.233.57.10:8080/api/v1"
 
     #Guardar el resumen de la partida
-    def save_game(self, players:dict[int,int],duration:int):
-        listajugadores=[]
-        for i in range(players[0]):
-            jugador={"id":players[0][i],"score":players[1][i]}
-            listajugadores.append(jugador)
+    def save_game(self, listajugadores,duration:int):
         data = {
             "jugadores":listajugadores,
             "duracion": duration,

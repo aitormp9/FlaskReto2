@@ -30,11 +30,13 @@ def finalizar():
     if 3 in game_state["rondas"]:
             tiempos = int(time.time() - tiempo)
             duracion = f"{tiempos // 3600:02d}:{(tiempos % 3600) // 60:02d}:{tiempos % 60:02d}"
-            try:
-                partida.save_game({idBBDD: game_state["puntuacion"]}, duracion)
-            except:
-                print("Error al enviar partida")
-                return
+            for i in range (len(idBBDD)):
+                listajugadores=[{"id":idBBDD[i],"score":game_state["puntuacion"][i]}]
+                try:
+                    partida.save_game(listajugadores, duracion)
+                except:
+                    print("Error al enviar partida")
+                    return
 
 def gestionDatos(conn, addr, player_id):
     global game_state, inicio_partida, tiempo
