@@ -58,10 +58,14 @@ def envioPosicion(x, y):#La informacion que gestionamos con los sockets
 def iniciosesion():#Funcion de iniciar sesion vinculado a Odoo
     global sesion,idBBDD,partida,conexion
     while True:
+        print("-------------------------------")
         email=input("Ingresa tu email: ")
         j = partida.login(email)
         if "error" in j:
-           print(j["message"])
+           print(f"\033[1m{j["message"]}!!!\033[0m")
+           print("\033[1;38;5;141m===========================================================================================")
+           print("  Únete a la batalla. ⚔️  Crea tu cuenta y activa la suscripción en gamehubdam.duckdns.org 👑")
+           print("===========================================================================================\033[0m")
         else:
             #print(+j["id"]) #id del jugador en la bbdd
             conexion=email
@@ -234,12 +238,22 @@ def reiniciar():#Situa cada objeto como al inicio de la partida
     bandera.esperando = False
 
 pygame.init()
-color={1:"Rojo",2:"Azul",3:"Verde",4:"Naranja"}
+color = {
+    1: "\033[31mRojo\033[0m",
+    2: "\033[34mAzul\033[0m",
+    3: "\033[32mVerde\033[0m",
+    4: "\033[33mNaranja\033[0m"
+}
+print("-------------------------------")
 print(f"Jugador: {color[mi_id]}")
 pygame.display.set_caption("Captura la bandera - Game Hub")
 icono = pygame.image.load("imagen/icono3.png")
 pygame.display.set_icon(icono)
-iniciosesion()
+
+try:
+    iniciosesion()
+except:
+    print("Error de conexion")
 if sesion:
     pygame.init()
     fuente_contador = pygame.font.Font(None, 32)

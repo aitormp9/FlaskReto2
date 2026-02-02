@@ -1,5 +1,5 @@
 import pygame
-
+#Creacion de Jugador
 class jugador:
     def __init__(self,screen,x,y,casa,imagen,nombre):
         #self.nombre=nombre
@@ -15,10 +15,10 @@ class jugador:
         self.yinicio=y
         self.imagennombre=pygame.image.load(imagen).convert_alpha()
         self.imagen = pygame.transform.scale(self.imagennombre, (self.anchura , self.altura ))
-
+    #Funcion para dibujar el jugador
     def draw(self):
         self.screen.blit(self.imagen, (self.x, self.y))
         #pygame.draw.rect(self.screen,(self.x, self.y, self.anchura, self.altura),border_radius=8)
-
+    #Para obtener el hitbox del jugador
     def getrect(self):
         return pygame.Rect(self.x,self.y,self.anchura,self.altura)
