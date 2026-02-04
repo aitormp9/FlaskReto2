@@ -52,13 +52,13 @@ def envioPosicion(x, y):#La informacion que gestionamos con los sockets
         tiempo=estado_global["tiempo"]
         return estado_global
     except:
-        print("Error con los datos")
+        #print("Error con los datos")
         return None
 
 def iniciosesion():#Funcion de iniciar sesion vinculado a Odoo
     global sesion,idBBDD,partida,conexion
     while True:
-        print("-------------------------------")
+        print("-------------------------------\nLOGIN")
         email=input("Ingresa tu email: ")
         j = partida.login(email)
         if "error" in j:

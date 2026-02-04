@@ -26,10 +26,10 @@ game_state = {
 lock = threading.Lock()
 def finalizar():
     global idBBDD, tiempo, game_state
-    print(idBBDD)
     if 3 in game_state["rondas"]:
-            tiempos = int(time.time() - tiempo)
+            tiempos = int(time.time() - inicio_partida)
             duracion = f"{tiempos // 3600:02d}:{(tiempos % 3600) // 60:02d}:{tiempos % 60:02d}"
+            print("Prueba", duracion,game_state["puntuacion"],game_state["rondas"],idBBDD)
             for i in range (len(idBBDD)):
                 listajugadores=[{"id":idBBDD[i],"score":game_state["puntuacion"][i]}]
                 try:
@@ -87,7 +87,9 @@ def gestionDatos(conn, addr, player_id):
                     if "bandera" in datos:
                         game_state["bandera"] = datos["bandera"]
                     if "idBBDD" in datos:
-                        idBBDD.append(datos["idBBDD"])
+                        new_id = datos["idBBDD"]
+                        if new_id not in idBBDD:
+                            idBBDD.append(new_id)
 
                     # Actualizar posisciones del Jugador
                     game_state["players"][player_id] = {
@@ -114,7 +116,7 @@ def gestionDatos(conn, addr, player_id):
 
                 # Enviar estado actualizado
                 conn.sendall(pickle.dumps(game_state))
-
+                finalizar()
     except Exception as e:
         print(f"[ERROR] {e}")
 
@@ -165,11 +167,6 @@ if __name__ == '__main__':
         thread_monitor.start()
     except :
         print("[ERROR] No se pudo monitorear")
-    try:
-        thread_finalizar = threading.Thread(target=finalizar, daemon=True)
-        thread_finalizar.start()
-    except :
-        print("[ERROR] al cargar final")
     try:
         thread_flask = threading.Thread(target=iniciarFlask, daemon=True)
         thread_flask.start()
