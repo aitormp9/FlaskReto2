@@ -6,14 +6,12 @@ class GameClient:
         self.api_url = "http://3.233.57.10:8080/api/v1"
 
     #Guardar el resumen de la partida
-    def save_game(self, players:dict[int,int],duration:int):
-        for id,score in players.items():
-            data = {
-                "jugadorId":id,
-                "duracion":duration,
-                "score":score
-            }
-            requests.post(f"{self.api_url}/partidas",json = data)
+    def save_game(self, listajugadores,duration:int):
+        data = {
+            "jugadores":listajugadores,
+            "duracion": duration,
+        }
+        requests.post(f"{self.api_url}/partidas",json = data)
  
     #Inicia sesión con el email
     def login(self, email:str):

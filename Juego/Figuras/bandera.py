@@ -1,5 +1,5 @@
 import pygame
-
+#Creacion de la bandera
 class bandera:
     def __init__(self,screen,imagen):
         self.x=640
@@ -13,10 +13,13 @@ class bandera:
         self.esperando=False
         self.image = pygame.image.load(imagen).convert_alpha()
         self.imagen = pygame.transform.scale(self.image, (self.ancho , self.alto ))
+        #Funcion para dibujar la bandera en pantalla
     def draw(self):
         #pygame.draw.rect(self.screen,self.color,(self.x,self.y,self.ancho,self.alto))
         self.screen.blit(self.imagen, (self.x, self.y))
+        #Hitbox del bandera
     def getrect(self):
-        return pygame.Rect(self.x,self.y,self.ancho,self.alto)
+        return pygame.Rect(self.x-20,self.y,self.ancho+20,self.alto)
+    #Para saber quien es el poseedor la bandera
     def getestado(self):
         return self.jugador

@@ -2,17 +2,17 @@ import socket
 import threading
 import pickle
 import time
-
+from gamerequests.jugador import GameClient
+from webFlask import iniciarFlask
 # --- CONFIGURACIÓN ---
 HOST = '0.0.0.0'
 PORT = 2000
 MAX_JUGADORES = 4
 
-# Variable para controlar cuándo empieza el cronómetro
-inicio_partida = time.time()
-tiempo=time.time()-inicio_partida
-
-# Estado global
+inicio_partida = 0
+idBBDD=[]
+partida = GameClient()
+# Estado del juego
 game_state = {
     "players": {},
     "puntuacion": [0, 0, 0, 0],
@@ -20,14 +20,26 @@ game_state = {
     "bandera": None,
     "estado": "sin empezar",
     "conexiones": [],
-    "tiempo": tiempo
+    "tiempo": 0,
 }
 
 lock = threading.Lock()
+def finalizar():
+    global idBBDD, tiempo, game_state
+    if 3 in game_state["rondas"]:
+            tiempos = int(time.time() - inicio_partida)
+            duracion = f"{tiempos // 3600:02d}:{(tiempos % 3600) // 60:02d}:{tiempos % 60:02d}"
+            print("Prueba", duracion,game_state["puntuacion"],game_state["rondas"],idBBDD)
+            for i in range (len(idBBDD)):
+                listajugadores=[{"id":idBBDD[i],"score":game_state["puntuacion"][i]}]
+                try:
+                    partida.save_game(listajugadores, duracion)
+                except:
+                    print("Error al enviar partida")
+                    return
 
-
-def handle_client(conn, addr, player_id):
-    global game_state, inicio_partida
+def gestionDatos(conn, addr, player_id):
+    global game_state, inicio_partida, tiempo
 
     # 1. Enviar ID al conectar
     try:
@@ -55,45 +67,56 @@ def handle_client(conn, addr, player_id):
                     # ACTUALIZAMOS EL TIEMPO AQUÍ PARA FLASK
                     game_state["tiempo"] = time.time() - inicio_partida
                     conn.sendall(pickle.dumps(game_state))
+                    if player_id in game_state["players"]:
+                        del game_state["players"][player_id]
                 break  # Flask recibe y se va (desconecta)
 
             # --- CASO B: ES UN JUGADOR ---
             with lock:
                 # 1. Gestionar Email
-                if isinstance(datos, dict) and "conexion" in datos:
-                    mi_email = datos["conexion"]
-                    if mi_email and mi_email not in game_state["conexiones"]:
-                        game_state["conexiones"].append(mi_email)
-
-                # 2. Actualizar Posiciones y Puntos
                 if isinstance(datos, dict):
-                    # Actualizar Bandera
+
+                    # 1. Sacamos el Email
+                    if "conexion" in datos:
+                        mi_email = datos["conexion"]
+                        # Verificamos email y que no esté repetido
+                        if mi_email and mi_email not in game_state["conexiones"]:
+                            game_state["conexiones"].append(mi_email)
+
+                    # 2. Sacamos la informacion de la bandera
                     if "bandera" in datos:
                         game_state["bandera"] = datos["bandera"]
+                    if "idBBDD" in datos:
+                        new_id = datos["idBBDD"]
+                        if new_id not in idBBDD:
+                            idBBDD.append(new_id)
 
-                    # Actualizar Jugador
+                    # Actualizar posisciones del Jugador
                     game_state["players"][player_id] = {
                         "x": datos.get("x", 0),
                         "y": datos.get("y", 0)
                     }
 
-                    # Actualizar Puntuación
+                    # Actualizar Puntuación de la partida
                     idx = player_id - 1
                     game_state["puntuacion"][idx] = datos.get("mi_puntuacion", 0)
                     game_state["rondas"][idx] = datos.get("mi_ronda", 0)
 
-                    # Verificar Estado
+                    # Control de  Estado de la partida
                     if 3 in game_state["puntuacion"]:
                         game_state["estado"] = "Terminada"
                     else:
                         game_state["estado"] = "Jugándose"
-
-                # 3. ACTUALIZAR TIEMPO ANTES DE RESPONDER AL JUGADOR
-                game_state["tiempo"] = time.time() - inicio_partida
+                    if datos.get("iniciotiempo") == 1:
+                        if inicio_partida == 0:
+                            print("--- TEMPORIZADOR INICIADO ---")
+                            inicio_partida = time.time()
+                        elif inicio_partida !=0:
+                            game_state["tiempo"]=time.time()-inicio_partida
 
                 # Enviar estado actualizado
                 conn.sendall(pickle.dumps(game_state))
-
+                finalizar()
     except Exception as e:
         print(f"[ERROR] {e}")
 
@@ -130,28 +153,34 @@ def monitor_puntuaciones():
 
         time.sleep(5)
 
-# --- INICIAR EL MONITOR ---
-thread_monitor = threading.Thread(target=monitor_puntuaciones, daemon=True)
-thread_monitor.start()
-
-
-
-
 # --- ARRANQUE ---
 if __name__ == '__main__':
     print(f"--- SERVER CORRIENDO EN {HOST}:{PORT} ---")
-
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind((HOST, PORT))
-    server.listen()
-
+    try:
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind((HOST, PORT))
+        server.listen()
+    except :
+        print(f"[ERROR] {HOST}:{PORT} no se pudo conectar")
+    try:
+        thread_monitor = threading.Thread(target=monitor_puntuaciones, daemon=True)
+        thread_monitor.start()
+    except :
+        print("[ERROR] No se pudo monitorear")
+    try:
+        thread_flask = threading.Thread(target=iniciarFlask, daemon=True)
+        thread_flask.start()
+    except :
+        print("[ERROR] No se pudo conectar a Flask")
     while True:
         conn, addr = server.accept()
 
         with lock:
             nuevo_id = next((i for i in range(1, 5) if i not in game_state["players"]), None)
 
-        if nuevo_id is None:
+        if nuevo_id is not None:
+            game_state["players"][nuevo_id] = {"x": -1000, "y": -1000}
+        else:
             nuevo_id = 99
 
-        threading.Thread(target=handle_client, args=(conn, addr, nuevo_id)).start()
+        threading.Thread(target=gestionDatos, args=(conn, addr, nuevo_id)).start()
